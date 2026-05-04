@@ -1,0 +1,248 @@
+{
+  "templates": {
+    "asthma_stable": {
+      "title": "ASTHMA",
+      "content": [
+        "- Well-controlled on current regimen",
+        "- No recent exacerbations",
+        "- Continue {medication} as prescribed",
+        "- Patient/family educated on trigger avoidance",
+        "- Follow up in {timeframe}"
+      ]
+    },
+    "asthma_exacerbation": {
+      "title": "ASTHMA EXACERBATION",
+      "content": [
+        "- Acute exacerbation with {symptoms}",
+        "- Increased albuterol use to {frequency}",
+        "- Started oral prednisone {dose} for {duration}",
+        "- Reviewed inhaler technique with family",
+        "- Close follow-up in {timeframe} or sooner if worsening"
+      ]
+    },
+    "uri": {
+      "title": "UPPER RESPIRATORY INFECTION",
+      "content": [
+        "- Viral URI symptoms: {symptoms}",
+        "- No signs of bacterial superinfection",
+        "- Supportive care: hydration, rest, saline rinses",
+        "- Symptomatic relief with {medication} as needed",
+        "- Return if fever >3 days, worsening symptoms, or difficulty breathing"
+      ]
+    },
+    "adhd_stable": {
+      "title": "ADHD",
+      "content": [
+        "- Symptoms well-controlled on {medication} {dose}",
+        "- No significant side effects reported",
+        "- School performance: {performance}",
+        "- Continue current medication",
+        "- Follow up in {timeframe} with Vanderbilt scales"
+      ]
+    },
+    "adhd_titration": {
+      "title": "ADHD - MEDICATION ADJUSTMENT",
+      "content": [
+        "- Suboptimal symptom control on current dose",
+        "- Increasing {medication} from {old_dose} to {new_dose}",
+        "- Monitor for side effects: appetite, sleep, mood",
+        "- Teacher Vanderbilt to be completed",
+        "- Follow up in {timeframe} to assess response"
+      ]
+    },
+    "wcc": {
+      "title": "WELL CHILD CHECK",
+      "content": [
+        "- Age-appropriate growth and development",
+        "- Height: {height_percentile}, Weight: {weight_percentile}",
+        "- Immunizations: {immunizations}",
+        "- Anticipatory guidance provided",
+        "- Next WCC at {next_visit}"
+      ]
+    },
+    "gerd": {
+      "title": "GASTROESOPHAGEAL REFLUX",
+      "content": [
+        "- Reflux symptoms: {symptoms}",
+        "- {medication} {dose} {frequency}",
+        "- Dietary modifications discussed",
+        "- Positional changes recommended",
+        "- Follow up in {timeframe} to assess response"
+      ]
+    },
+    "constipation": {
+      "title": "CONSTIPATION",
+      "content": [
+        "- Functional constipation",
+        "- Bowel movements: {frequency}",
+        "- Started {medication} {dose}",
+        "- Increase fiber and fluid intake",
+        "- Scheduled toilet sits after meals",
+        "- Follow up in {timeframe}"
+      ]
+    },
+    "eczema": {
+      "title": "ATOPIC DERMATITIS",
+      "content": [
+        "- Eczema affecting {location}",
+        "- Severity: {severity}",
+        "- {medication} {frequency} to affected areas",
+        "- Daily moisturizer application",
+        "- Trigger avoidance discussed",
+        "- Follow up in {timeframe} or PRN for flares"
+      ]
+    },
+    "obesity": {
+      "title": "OBESITY",
+      "content": [
+        "- BMI {bmi} ({percentile})",
+        "- Nutrition counseling provided",
+        "- Goal: {goal}",
+        "- Increase physical activity to {target}",
+        "- Limit screen time and sugary beverages",
+        "- Follow up in {timeframe} for weight check"
+      ]
+    },
+    "otitis_media": {
+      "title": "ACUTE OTITIS MEDIA",
+      "content": [
+        "- Acute otitis media, {laterality}",
+        "- Started {antibiotic} {dose} for {duration}",
+        "- Pain control with {pain_med}",
+        "- Follow up if not improved in 48-72 hours",
+        "- Recheck ears in {timeframe}"
+      ]
+    },
+    "pharyngitis": {
+      "title": "PHARYNGITIS",
+      "content": [
+        "- {type} pharyngitis",
+        "- Strep rapid: {strep_result}",
+        "- Treatment: {treatment}",
+        "- Symptomatic relief, adequate hydration",
+        "- Return to school/daycare after {timing}"
+      ]
+    },
+    "headache": {
+      "title": "HEADACHE",
+      "content": [
+        "- {headache_type} headache",
+        "- Frequency: {frequency}",
+        "- Triggers: {triggers}",
+        "- Treatment: {medication}",
+        "- Headache diary recommended",
+        "- Follow up in {timeframe}"
+      ]
+    },
+    "anxiety": {
+      "title": "ANXIETY",
+      "content": [
+        "- Anxiety symptoms: {symptoms}",
+        "- GAD-7 score: {score}",
+        "- Impact on functioning: {impact}",
+        "- {treatment}",
+        "- Therapy referral: {therapy_status}",
+        "- Follow up in {timeframe}"
+      ]
+    },
+    "depression": {
+      "title": "DEPRESSION",
+      "content": [
+        "- Depressive symptoms: {symptoms}",
+        "- PHQ-9 score: {score}",
+        "- Safety assessment: {safety}",
+        "- {treatment}",
+        "- Therapy referral: {therapy_status}",
+        "- Follow up in {timeframe}"
+      ]
+    }
+  },
+  "quick_buttons": [
+    {"label": "Asthma Stable", "template": "asthma_stable"},
+    {"label": "Asthma Flare", "template": "asthma_exacerbation"},
+    {"label": "URI", "template": "uri"},
+    {"label": "ADHD Stable", "template": "adhd_stable"},
+    {"label": "ADHD Adjust", "template": "adhd_titration"},
+    {"label": "WCC", "template": "wcc"},
+    {"label": "GERD", "template": "gerd"},
+    {"label": "Constipation", "template": "constipation"},
+    {"label": "Eczema", "template": "eczema"},
+    {"label": "Obesity", "template": "obesity"},
+    {"label": "Otitis Media", "template": "otitis_media"},
+    {"label": "Pharyngitis", "template": "pharyngitis"},
+    {"label": "Headache", "template": "headache"},
+    {"label": "Anxiety", "template": "anxiety"},
+    {"label": "Depression", "template": "depression"}
+  ],
+  "patterns": [
+    {
+      "pattern": "asthma\\s+stable",
+      "template": "asthma_stable",
+      "defaults": {
+        "medication": "albuterol PRN",
+        "timeframe": "3 months"
+      }
+    },
+    {
+      "pattern": "asthma\\s+flare",
+      "template": "asthma_exacerbation",
+      "defaults": {
+        "symptoms": "wheezing, cough",
+        "frequency": "q4h",
+        "dose": "1mg/kg",
+        "duration": "5 days",
+        "timeframe": "1 week"
+      }
+    },
+    {
+      "pattern": "uri",
+      "template": "uri",
+      "defaults": {
+        "symptoms": "rhinorrhea, congestion, cough",
+        "medication": "acetaminophen"
+      }
+    },
+    {
+      "pattern": "adhd\\s+stable",
+      "template": "adhd_stable",
+      "defaults": {
+        "medication": "methylphenidate",
+        "dose": "18mg daily",
+        "performance": "improved",
+        "timeframe": "3 months"
+      }
+    },
+    {
+      "pattern": "wcc",
+      "template": "wcc",
+      "defaults": {
+        "height_percentile": "50th",
+        "weight_percentile": "50th",
+        "immunizations": "up to date",
+        "next_visit": "age-appropriate interval"
+      }
+    },
+    {
+      "pattern": "ear\\s+infection|otitis",
+      "template": "otitis_media",
+      "defaults": {
+        "laterality": "bilateral",
+        "antibiotic": "amoxicillin",
+        "dose": "90mg/kg/day divided BID",
+        "duration": "10 days",
+        "pain_med": "ibuprofen",
+        "timeframe": "2-3 weeks"
+      }
+    },
+    {
+      "pattern": "sore\\s+throat|pharyngitis",
+      "template": "pharyngitis",
+      "defaults": {
+        "type": "viral",
+        "strep_result": "negative",
+        "treatment": "supportive care",
+        "timing": "afebrile for 24 hours"
+      }
+    }
+  ]
+}
