@@ -149,6 +149,16 @@ class PedsChartingTool:
                     "- Limit screen time and sugary beverages",
                     "- Follow up in {timeframe} for weight check"
                 ]
+            },
+            "injury": {
+                "title": "INJURY",
+                "content": [
+                    "- {injury_type} affecting {location}",
+                    "- Mechanism: {mechanism}",
+                    "- Pain control with {pain_med}",
+                    "- Activity restrictions: {restrictions}",
+                    "- Follow up in {timeframe} or sooner if worsening"
+                ]
             }
         }
         
@@ -162,7 +172,8 @@ class PedsChartingTool:
             {"label": "GERD", "template": "gerd"},
             {"label": "Constipation", "template": "constipation"},
             {"label": "Eczema", "template": "eczema"},
-            {"label": "Obesity", "template": "obesity"}
+            {"label": "Obesity", "template": "obesity"},
+            {"label": "Injury", "template": "injury"}
         ]
         
         self.patterns = [
@@ -190,6 +201,11 @@ class PedsChartingTool:
                 "pattern": r"wcc",
                 "template": "wcc",
                 "defaults": {"height_percentile": "50th", "weight_percentile": "50th", "immunizations": "up to date", "next_visit": "age-appropriate interval"}
+            },
+            {
+                "pattern": r"injury|hurt|fall|trauma|sprain",
+                "template": "injury",
+                "defaults": {"injury_type": "soft tissue injury", "location": "extremity", "mechanism": "playground accident", "pain_med": "ibuprofen", "restrictions": "as tolerated", "timeframe": "1 week"}
             }
         ]
         
@@ -254,6 +270,12 @@ class PedsChartingTool:
         
         ttk.Button(input_controls, text="Process Now", command=self.process_input).pack(side=tk.LEFT, padx=3)
         ttk.Button(input_controls, text="Clear Input", command=self.clear_input).pack(side=tk.LEFT, padx=3)
+        
+        # Formatting buttons
+        format_frame = ttk.Frame(input_controls)
+        format_frame.pack(side=tk.RIGHT, padx=3)
+        ttk.Button(format_frame, text="B", width=3, command=self.make_bold).pack(side=tk.LEFT, padx=1)
+        ttk.Button(format_frame, text="I", width=3, command=self.make_italic).pack(side=tk.LEFT, padx=1)
         
         # Output Section
         output_frame = ttk.LabelFrame(main_frame, text="Expanded Output (auto-copies after typing pause)", padding="10")
@@ -335,10 +357,11 @@ class PedsChartingTool:
             self.status_label.config(text="Added as free text")
         
     def render_output(self):
-        """Render the current note components to output"""
+        """Render the current note components to output with conditional phrases"""
         self.output_text.delete("1.0", tk.END)
         
         output_parts = []
+        detected_conditions = set()
         
         for component in self.note_components:
             if isinstance(component, str) and component in self.templates:
@@ -346,16 +369,136 @@ class PedsChartingTool:
                 template = self.templates[component]
                 output_parts.append(template['title'])
                 for line in template['content']:
-                    # Keep placeholders for easy manual editing
                     output_parts.append(line)
-                output_parts.append("")  # Blank line between sections
+                output_parts.append("")
+                # Detect conditions for phrases
+                self._detect_conditions(component, detected_conditions)
             elif isinstance(component, dict) and component.get('type') == 'freetext':
                 # It's free text
-                output_parts.append(component['content'].upper())
+                content = component['content']
+                output_parts.append(content.upper())
                 output_parts.append("")
+                # Check free text for conditions
+                self._detect_conditions_in_text(content, detected_conditions)
+        
+        # Add conditional phrases
+        conditional_phrases = self._get_conditional_phrases(detected_conditions)
+        if conditional_phrases:
+            output_parts.append("")
+            output_parts.append("=" * 50)
+            output_parts.append("ADDITIONAL DOCUMENTATION:")
+            output_parts.append("")
+            output_parts.extend(conditional_phrases)
         
         output = "\n".join(output_parts)
         self.output_text.insert("1.0", output)
+        
+    def _detect_conditions(self, template_key, conditions):
+        """Detect conditions based on template key"""
+        condition_map = {
+            'wcc': ['well_child'],
+            'asthma_stable': ['illness'],
+            'asthma_exacerbation': ['illness'],
+            'uri': ['illness'],
+            'adhd_stable': ['adhd', 'pcmh'],
+            'adhd_titration': ['adhd', 'pcmh'],
+            'otitis_media': ['ear_infection', 'illness'],
+            'pharyngitis': ['illness', 'strep_test'],
+            'obesity': ['obesity', 'weight', 'pcmh'],
+            'constipation': ['gi_symptoms'],
+            'gerd': ['gi_symptoms'],
+            'eczema': ['skin_condition'],
+            'headache': ['illness'],
+            'anxiety': ['mental_health'],
+            'depression': ['mental_health'],
+            'injury': ['injury']
+        }
+        if template_key in condition_map:
+            conditions.update(condition_map[template_key])
+            
+    def _detect_conditions_in_text(self, text, conditions):
+        """Detect conditions in free text"""
+        text_lower = text.lower()
+        # Well child / health maintenance
+        if any(word in text_lower for word in ['well child', 'health maintenance', 'wcc', 'check up', 'physical']):
+            conditions.add('well_child')
+        # Illness
+        if any(word in text_lower for word in ['fever', 'cough', 'cold', 'sick', 'illness', 'infection', 'virus', 'pain', 'ache', 'symptom']):
+            conditions.add('illness')
+        # Injury
+        if any(word in text_lower for word in ['injury', 'hurt', 'fall', 'accident', 'trauma', 'sprain', 'fracture', 'wound']):
+            conditions.add('injury')
+        # Ear infection
+        if any(word in text_lower for word in ['ear infection', 'ear pain', 'otitis', 'earache']):
+            conditions.add('ear_infection')
+        # Strep test
+        if any(word in text_lower for word in ['strep', 'throat culture', 'rapid strep']):
+            conditions.add('strep_test')
+            conditions.add('pcmh')
+        # Dehydration/GI
+        if any(word in text_lower for word in ['dehydration', 'vomiting', 'diarrhea', 'decreased urination', 'not peeing', 'not drinking']):
+            conditions.add('dehydration_gi')
+        # Breathing
+        if any(word in text_lower for word in ['breathing', 'wheezing', 'short of breath', 'respiratory', 'coughing', 'tachypnea']):
+            conditions.add('breathing')
+        # ADHD
+        if 'adhd' in text_lower or 'attention' in text_lower:
+            conditions.add('adhd')
+            conditions.add('pcmh')
+        # Weight/Obesity
+        if any(word in text_lower for word in ['weight', 'obese', 'obesity', 'overweight', 'bmi', 'diet']):
+            conditions.add('weight')
+            conditions.add('pcmh')
+            
+    def _get_conditional_phrases(self, conditions):
+        """Get phrases based on detected conditions"""
+        phrases = []
+        
+        if 'well_child' in conditions:
+            phrases.append("All forms, labs, immunizations, and patient concerns reviewed and addressed appropriately. Screening questions, past medical history, past social history, medications, and growth chart reviewed. Age-appropriate anticipatory guidance reviewed and printed in AVS. Parent questions addressed.")
+            
+        if 'illness' in conditions:
+            phrases.append("Recommended supportive care with OTC medications as needed. Return precautions given including increasing pain, worsening fever, dehydration, new symptoms, prolonged symptoms, worsening symptoms, and other concerns. Caregiver expressed understanding and agreement with treatment plan.")
+            
+        if 'injury' in conditions:
+            phrases.append("Recommended supportive care with Tylenol, Motrin, rest, ice, compression, elevation, and gradual return to activity as appropriate. Return precautions given including increasing pain, swelling, or failure to improve.")
+            
+        if 'ear_infection' in conditions:
+            phrases.append("Risk of untreated otitis media includes persistent pain and fever, hearing loss, and mastoiditis.")
+            
+        if 'strep_test' in conditions:
+            phrases.append("Risk of untreated strep throat includes rheumatic fever and peritonsillar abscess. This problem is moderate risk due to pending lab results which may necessitate further pharmacologic management.")
+            
+        if 'dehydration_gi' in conditions:
+            phrases.append("Patient is at risk for dehydration, which would warrant emergency room care or admission for IV fluids.")
+            
+        if 'breathing' in conditions:
+            phrases.append("Patient is at risk for worsening respiratory distress and clinical deterioration, which would need emergency room care or hospital admission.")
+            
+        if 'pcmh' in conditions:
+            phrases.append("PCMH Reminder")
+            
+        return phrases
+        
+    def make_bold(self):
+        """Make selected text bold"""
+        try:
+            selected = self.input_text.get(tk.SEL_FIRST, tk.SEL_LAST)
+            if selected:
+                self.input_text.delete(tk.SEL_FIRST, tk.SEL_LAST)
+                self.input_text.insert(tk.SEL_FIRST, f"**{selected}**")
+        except tk.TclError:
+            pass  # No selection
+            
+    def make_italic(self):
+        """Make selected text italic"""
+        try:
+            selected = self.input_text.get(tk.SEL_FIRST, tk.SEL_LAST)
+            if selected:
+                self.input_text.delete(tk.SEL_FIRST, tk.SEL_LAST)
+                self.input_text.insert(tk.SEL_FIRST, f"*{selected}*")
+        except tk.TclError:
+            pass  # No selection
         
     def copy_to_clipboard(self):
         """Copy output to clipboard"""

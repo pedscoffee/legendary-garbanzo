@@ -155,6 +155,16 @@
         "- Therapy referral: {therapy_status}",
         "- Follow up in {timeframe}"
       ]
+    },
+    "injury": {
+      "title": "INJURY",
+      "content": [
+        "- {injury_type} affecting {location}",
+        "- Mechanism: {mechanism}",
+        "- Pain control with {pain_med}",
+        "- Activity restrictions: {restrictions}",
+        "- Follow up in {timeframe} or sooner if worsening"
+      ]
     }
   },
   "quick_buttons": [
@@ -172,7 +182,8 @@
     {"label": "Pharyngitis", "template": "pharyngitis"},
     {"label": "Headache", "template": "headache"},
     {"label": "Anxiety", "template": "anxiety"},
-    {"label": "Depression", "template": "depression"}
+    {"label": "Depression", "template": "depression"},
+    {"label": "Injury", "template": "injury"}
   ],
   "patterns": [
     {
@@ -242,6 +253,18 @@
         "strep_result": "negative",
         "treatment": "supportive care",
         "timing": "afebrile for 24 hours"
+      }
+    },
+    {
+      "pattern": "injury|hurt|fall|trauma|sprain",
+      "template": "injury",
+      "defaults": {
+        "injury_type": "soft tissue injury",
+        "location": "extremity",
+        "mechanism": "playground accident",
+        "pain_med": "ibuprofen",
+        "restrictions": "as tolerated",
+        "timeframe": "1 week"
       }
     }
   ]
