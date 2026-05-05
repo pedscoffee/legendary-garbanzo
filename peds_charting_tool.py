@@ -285,6 +285,8 @@ class PedsChartingTool:
             bg='#f0f0f0'
         )
         self.output_text.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
+        # Configure italic tag
+        self.output_text.tag_configure('italic', font=('Arial', 11, 'italic'))
         
         # Output controls
         output_controls = ttk.Frame(output_frame)
@@ -354,36 +356,32 @@ class PedsChartingTool:
         """Render the current note components to output with conditional phrases"""
         self.output_text.delete("1.0", tk.END)
         
-        output_parts = []
         detected_conditions = set()
         
+        # Build content line by line with proper formatting
         for component in self.note_components:
             if isinstance(component, str) and component in self.templates:
                 # It's a template key
                 template = self.templates[component]
-                output_parts.append(template['title'])
+                self.output_text.insert(tk.END, template['title'] + "\n")
                 for line in template['content']:
-                    output_parts.append(line)
-                output_parts.append("")
+                    self.output_text.insert(tk.END, line + "\n")
+                self.output_text.insert(tk.END, "\n")
                 # Detect conditions for phrases
                 self._detect_conditions(component, detected_conditions)
             elif isinstance(component, dict) and component.get('type') == 'freetext':
                 # It's free text
                 content = component['content']
-                output_parts.append(content.upper())
-                output_parts.append("")
+                self.output_text.insert(tk.END, content.upper() + "\n\n")
                 # Check free text for conditions
                 self._detect_conditions_in_text(content, detected_conditions)
         
-        # Add conditional phrases in italics
+        # Add conditional phrases in actual italics
         conditional_phrases = self._get_conditional_phrases(detected_conditions)
         if conditional_phrases:
-            output_parts.append("")
+            self.output_text.insert(tk.END, "\n")
             for phrase in conditional_phrases:
-                output_parts.append(f"*{phrase}*")
-        
-        output = "\n".join(output_parts)
-        self.output_text.insert("1.0", output)
+                self.output_text.insert(tk.END, phrase + "\n", 'italic')
         
     def _detect_conditions(self, template_key, conditions):
         """Detect conditions based on template key"""
