@@ -312,6 +312,8 @@ class PedsChartingTool:
         self.output_text.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
         # Configure italic tag
         self.output_text.tag_configure('italic', font=('Arial', 11, 'italic'))
+        # Bind down arrow to jump to next placeholder
+        self.output_text.bind('<Down>', self.jump_to_next_placeholder)
         
         # Output controls
         output_controls = ttk.Frame(output_frame)
@@ -388,6 +390,36 @@ class PedsChartingTool:
         self.render_output()
         self.copy_to_clipboard()
         self.status_label.config(text=f"Follow-up set: {follow_up}")
+        
+    def jump_to_next_placeholder(self, event=None):
+        """Jump to and select the next {bracketed} placeholder"""
+        # Get current cursor position
+        current_pos = self.output_text.index(tk.INSERT)
+        
+        # Search for next { starting from current position
+        content = self.output_text.get("1.0", tk.END)
+        search_start = self.output_text.index(f"{current_pos} + 1 chars")
+        
+        # Find next opening brace
+        start_idx = self.output_text.search("{", search_start, stopindex=tk.END, regexp=False)
+        
+        if not start_idx:
+            # If not found from current position, search from beginning
+            start_idx = self.output_text.search("{", "1.0", stopindex=current_pos, regexp=False)
+        
+        if start_idx:
+            # Find closing brace after the opening one
+            end_idx = self.output_text.search("}", f"{start_idx} + 1 chars", stopindex=tk.END, regexp=False)
+            
+            if end_idx:
+                # Select the entire placeholder including braces
+                self.output_text.tag_remove(tk.SEL, "1.0", tk.END)
+                self.output_text.tag_add(tk.SEL, start_idx, f"{end_idx} + 1 chars")
+                self.output_text.mark_set(tk.INSERT, end_idx)
+                self.output_text.see(start_idx)
+                return "break"  # Prevent default down arrow behavior
+        
+        return None  # Let default behavior occur if no placeholder found
         
     def _check_follow_up_shorthand(self, text):
         """Check for follow-up shorthand in text"""
