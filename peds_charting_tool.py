@@ -271,12 +271,6 @@ class PedsChartingTool:
         ttk.Button(input_controls, text="Process Now", command=self.process_input).pack(side=tk.LEFT, padx=3)
         ttk.Button(input_controls, text="Clear Input", command=self.clear_input).pack(side=tk.LEFT, padx=3)
         
-        # Formatting buttons
-        format_frame = ttk.Frame(input_controls)
-        format_frame.pack(side=tk.RIGHT, padx=3)
-        ttk.Button(format_frame, text="B", width=3, command=self.make_bold).pack(side=tk.LEFT, padx=1)
-        ttk.Button(format_frame, text="I", width=3, command=self.make_italic).pack(side=tk.LEFT, padx=1)
-        
         # Output Section
         output_frame = ttk.LabelFrame(main_frame, text="Expanded Output (auto-copies after typing pause)", padding="10")
         output_frame.grid(row=2, column=0, sticky=(tk.W, tk.E, tk.N, tk.S), pady=(0, 10))
@@ -381,14 +375,12 @@ class PedsChartingTool:
                 # Check free text for conditions
                 self._detect_conditions_in_text(content, detected_conditions)
         
-        # Add conditional phrases
+        # Add conditional phrases in italics
         conditional_phrases = self._get_conditional_phrases(detected_conditions)
         if conditional_phrases:
             output_parts.append("")
-            output_parts.append("=" * 50)
-            output_parts.append("ADDITIONAL DOCUMENTATION:")
-            output_parts.append("")
-            output_parts.extend(conditional_phrases)
+            for phrase in conditional_phrases:
+                output_parts.append(f"*{phrase}*")
         
         output = "\n".join(output_parts)
         self.output_text.insert("1.0", output)
@@ -479,26 +471,6 @@ class PedsChartingTool:
             phrases.append("PCMH Reminder")
             
         return phrases
-        
-    def make_bold(self):
-        """Make selected text bold"""
-        try:
-            selected = self.input_text.get(tk.SEL_FIRST, tk.SEL_LAST)
-            if selected:
-                self.input_text.delete(tk.SEL_FIRST, tk.SEL_LAST)
-                self.input_text.insert(tk.SEL_FIRST, f"**{selected}**")
-        except tk.TclError:
-            pass  # No selection
-            
-    def make_italic(self):
-        """Make selected text italic"""
-        try:
-            selected = self.input_text.get(tk.SEL_FIRST, tk.SEL_LAST)
-            if selected:
-                self.input_text.delete(tk.SEL_FIRST, tk.SEL_LAST)
-                self.input_text.insert(tk.SEL_FIRST, f"*{selected}*")
-        except tk.TclError:
-            pass  # No selection
         
     def copy_to_clipboard(self):
         """Copy output to clipboard"""
