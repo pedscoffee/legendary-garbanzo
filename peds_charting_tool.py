@@ -172,6 +172,16 @@ class PedsChartingTool:
                     "- Activity restrictions: {restrictions}",
                     "- Follow up in {timeframe} or sooner if worsening"
                 ]
+            },
+            "illness": {
+                "title": "ILLNESS",
+                "content": [
+                    "- Patient presents with {symptoms}",
+                    "- Duration: {duration}",
+                    "- Treatment: {treatment}",
+                    "- Return precautions discussed including [[*worsening fever|worsening pain|shortness of breath|vomiting|diarrhea|dehydration|worsening rash|abnormal movements|itching|failure to improve|prolonged symptoms|new symptoms]]",
+                    "- Follow up in {timeframe} or sooner if concerns"
+                ]
             }
         }
         
@@ -392,34 +402,132 @@ class PedsChartingTool:
         self.status_label.config(text=f"Follow-up set: {follow_up}")
         
     def jump_to_next_placeholder(self, event=None):
-        """Jump to and select the next {bracketed} placeholder"""
+        """Jump to and select the next placeholder (single {..} or multi-select [[..]])"""
         # Get current cursor position
         current_pos = self.output_text.index(tk.INSERT)
-        
-        # Search for next { starting from current position
-        content = self.output_text.get("1.0", tk.END)
         search_start = self.output_text.index(f"{current_pos} + 1 chars")
         
-        # Find next opening brace
-        start_idx = self.output_text.search("{", search_start, stopindex=tk.END, regexp=False)
+        # Search for both types of placeholders
+        single_start = self.output_text.search("{", search_start, stopindex=tk.END, regexp=False)
+        multi_start = self.output_text.search("[[", search_start, stopindex=tk.END, regexp=False)
         
-        if not start_idx:
-            # If not found from current position, search from beginning
-            start_idx = self.output_text.search("{", "1.0", stopindex=current_pos, regexp=False)
+        # Also search from beginning if not found
+        if not single_start:
+            single_start = self.output_text.search("{", "1.0", stopindex=current_pos, regexp=False)
+        if not multi_start:
+            multi_start = self.output_text.search("[[", "1.0", stopindex=current_pos, regexp=False)
+        
+        # Determine which placeholder comes first
+        start_idx = None
+        placeholder_type = None
+        
+        if single_start and multi_start:
+            # Compare positions
+            single_line, single_col = map(int, single_start.split('.'))
+            multi_line, multi_col = map(int, multi_start.split('.'))
+            if single_line < multi_line or (single_line == multi_line and single_col < multi_col):
+                start_idx = single_start
+                placeholder_type = 'single'
+            else:
+                start_idx = multi_start
+                placeholder_type = 'multi'
+        elif single_start:
+            start_idx = single_start
+            placeholder_type = 'single'
+        elif multi_start:
+            start_idx = multi_start
+            placeholder_type = 'multi'
         
         if start_idx:
-            # Find closing brace after the opening one
-            end_idx = self.output_text.search("}", f"{start_idx} + 1 chars", stopindex=tk.END, regexp=False)
-            
-            if end_idx:
-                # Select the entire placeholder including braces
-                self.output_text.tag_remove(tk.SEL, "1.0", tk.END)
-                self.output_text.tag_add(tk.SEL, start_idx, f"{end_idx} + 1 chars")
-                self.output_text.mark_set(tk.INSERT, end_idx)
-                self.output_text.see(start_idx)
-                return "break"  # Prevent default down arrow behavior
+            if placeholder_type == 'single':
+                # Handle single placeholder
+                end_idx = self.output_text.search("}", f"{start_idx} + 1 chars", stopindex=tk.END, regexp=False)
+                if end_idx:
+                    self.output_text.tag_remove(tk.SEL, "1.0", tk.END)
+                    self.output_text.tag_add(tk.SEL, start_idx, f"{end_idx} + 1 chars")
+                    self.output_text.mark_set(tk.INSERT, end_idx)
+                    self.output_text.see(start_idx)
+                    return "break"
+            else:
+                # Handle multi-select placeholder
+                end_idx = self.output_text.search("]]", f"{start_idx} + 2 chars", stopindex=tk.END, regexp=False)
+                if end_idx:
+                    # Get the placeholder content
+                    content = self.output_text.get(start_idx, f"{end_idx} + 2 chars")
+                    # Show selection dialog
+                    self.show_multi_select_dialog(start_idx, f"{end_idx} + 2 chars", content)
+                    return "break"
         
-        return None  # Let default behavior occur if no placeholder found
+        return None
+        
+    def show_multi_select_dialog(self, start_idx, end_idx, content):
+        """Show a dialog to select options from a multi-select placeholder"""
+        # Extract options from [[option1|option2|...]]
+        inner = content[2:-2]  # Remove [[ and ]]
+        options = [opt.strip() for opt in inner.split('|')]
+        
+        # Parse pre-selected options (marked with * prefix)
+        selected_options = []
+        display_options = []
+        for opt in options:
+            if opt.startswith('*'):
+                selected_options.append(opt[1:].strip())
+                display_options.append(opt[1:].strip())
+            else:
+                display_options.append(opt)
+        
+        # Create dialog
+        dialog = tk.Toplevel(self.root)
+        dialog.title("Select Options")
+        dialog.transient(self.root)
+        dialog.grab_set()
+        
+        # Center dialog
+        dialog.geometry("400x400")
+        dialog.update_idletasks()
+        x = (dialog.winfo_screenwidth() // 2) - (400 // 2)
+        y = (dialog.winfo_screenheight() // 2) - (400 // 2)
+        dialog.geometry(f"400x400+{x}+{y}")
+        
+        ttk.Label(dialog, text="Select options:", font=('Arial', 11, 'bold')).pack(pady=10)
+        
+        # Create checkboxes
+        checkboxes = {}
+        for opt in display_options:
+            var = tk.BooleanVar(value=opt in selected_options)
+            checkboxes[opt] = var
+            cb = ttk.Checkbutton(dialog, text=opt, variable=var)
+            cb.pack(anchor=tk.W, padx=20, pady=2)
+        
+        def on_ok():
+            # Get selected options
+            selected = [opt for opt, var in checkboxes.items() if var.get()]
+            if selected:
+                replacement = ", ".join(selected)
+            else:
+                replacement = "[none selected]"
+            
+            # Replace placeholder in text
+            self.output_text.delete(start_idx, end_idx)
+            self.output_text.insert(start_idx, replacement)
+            dialog.destroy()
+            
+            # Move to next placeholder
+            self.output_text.mark_set(tk.INSERT, start_idx)
+            self.root.after(100, self.jump_to_next_placeholder)
+        
+        def on_cancel():
+            dialog.destroy()
+        
+        btn_frame = ttk.Frame(dialog)
+        btn_frame.pack(pady=20)
+        ttk.Button(btn_frame, text="OK", command=on_ok).pack(side=tk.LEFT, padx=5)
+        ttk.Button(btn_frame, text="Cancel", command=on_cancel).pack(side=tk.LEFT, padx=5)
+        
+        # Select all text in placeholder
+        self.output_text.tag_remove(tk.SEL, "1.0", tk.END)
+        self.output_text.tag_add(tk.SEL, start_idx, end_idx)
+        self.output_text.see(start_idx)
         
     def _check_follow_up_shorthand(self, text):
         """Check for follow-up shorthand in text"""
