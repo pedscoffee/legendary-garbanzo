@@ -439,9 +439,9 @@ class PedsChartingTool:
             for phrase in conditional_phrases:
                 self.output_text.insert(tk.END, phrase + "\n", 'italic')
         
-        # Add follow-up if set
+        # Add follow-up if set (in italics)
         if self.follow_up:
-            self.output_text.insert(tk.END, f"\nFollow-up: {self.follow_up}\n")
+            self.output_text.insert(tk.END, f"\nFollow-up: {self.follow_up}\n", 'italic')
         
     def _detect_conditions(self, template_key, conditions):
         """Detect conditions based on template key"""
