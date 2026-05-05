@@ -30,6 +30,19 @@ class PedsChartingTool:
         # Current note components
         self.note_components = []
         
+        # Follow up selection
+        self.follow_up = None
+        self.follow_up_options = [
+            "Tomorrow",
+            "2-3 days",
+            "2-4 weeks",
+            "1 month",
+            "3 months",
+            "1 year",
+            "PRN",
+            "Next well check"
+        ]
+        
         self.setup_ui()
         
     def load_templates(self):
@@ -231,8 +244,7 @@ class PedsChartingTool:
         self.root.columnconfigure(0, weight=1)
         self.root.rowconfigure(0, weight=1)
         main_frame.columnconfigure(0, weight=1)
-        main_frame.rowconfigure(2, weight=1)
-        main_frame.rowconfigure(4, weight=1)
+        main_frame.rowconfigure(3, weight=1)
         
         # Quick Buttons Section
         button_frame = ttk.LabelFrame(main_frame, text="Quick Add Buttons", padding="10")
@@ -250,9 +262,22 @@ class PedsChartingTool:
             btn.grid(row=row, column=col, padx=3, pady=3, sticky=(tk.W, tk.E))
             button_frame.columnconfigure(col, weight=1)
         
+        # Follow-Up Buttons Section
+        followup_frame = ttk.LabelFrame(main_frame, text="Follow-Up", padding="10")
+        followup_frame.grid(row=1, column=0, sticky=(tk.W, tk.E), pady=(0, 10))
+        
+        for idx, option in enumerate(self.follow_up_options):
+            btn = ttk.Button(
+                followup_frame,
+                text=option,
+                command=lambda fu=option: self.set_follow_up(fu)
+            )
+            btn.grid(row=0, column=idx, padx=3, pady=3, sticky=(tk.W, tk.E))
+            followup_frame.columnconfigure(idx, weight=1)
+        
         # Shorthand Input Section
         input_frame = ttk.LabelFrame(main_frame, text="Shorthand Input", padding="10")
-        input_frame.grid(row=1, column=0, sticky=(tk.W, tk.E), pady=(0, 10))
+        input_frame.grid(row=2, column=0, sticky=(tk.W, tk.E), pady=(0, 10))
         input_frame.columnconfigure(0, weight=1)
         
         self.input_text = scrolledtext.ScrolledText(
@@ -273,7 +298,7 @@ class PedsChartingTool:
         
         # Output Section
         output_frame = ttk.LabelFrame(main_frame, text="Expanded Output (auto-copies after typing pause)", padding="10")
-        output_frame.grid(row=2, column=0, sticky=(tk.W, tk.E, tk.N, tk.S), pady=(0, 10))
+        output_frame.grid(row=3, column=0, sticky=(tk.W, tk.E, tk.N, tk.S), pady=(0, 10))
         output_frame.columnconfigure(0, weight=1)
         output_frame.rowconfigure(0, weight=1)
         
@@ -298,7 +323,7 @@ class PedsChartingTool:
         
         # Status bar
         self.status_label = ttk.Label(main_frame, text="Ready", relief=tk.SUNKEN, anchor=tk.W)
-        self.status_label.grid(row=3, column=0, sticky=(tk.W, tk.E))
+        self.status_label.grid(row=4, column=0, sticky=(tk.W, tk.E))
         
     def on_typing(self, event=None):
         """Handle typing events - reset auto-copy timer"""
@@ -329,10 +354,15 @@ class PedsChartingTool:
         
     def process_input(self):
         """Process shorthand input and expand to full text"""
-        input_text = self.input_text.get("1.0", tk.END).strip().lower()
+        input_text = self.input_text.get("1.0", tk.END).strip()
         
         if not input_text:
             return
+        
+        # Check for follow-up shorthand first
+        self._check_follow_up_shorthand(input_text)
+        
+        input_text_lower = input_text.lower()
         
         # Try to match patterns
         matched = False
@@ -348,9 +378,35 @@ class PedsChartingTool:
             self.status_label.config(text="Input processed")
         else:
             # If no pattern matched, add as free text
-            self.note_components.append({"type": "freetext", "content": input_text})
+            self.note_components.append({"type": "freetext", "content": input_text_lower})
             self.render_output()
             self.status_label.config(text="Added as free text")
+        
+    def set_follow_up(self, follow_up):
+        """Set the follow-up timeframe"""
+        self.follow_up = follow_up
+        self.render_output()
+        self.copy_to_clipboard()
+        self.status_label.config(text=f"Follow-up set: {follow_up}")
+        
+    def _check_follow_up_shorthand(self, text):
+        """Check for follow-up shorthand in text"""
+        text_lower = text.lower()
+        follow_up_patterns = {
+            r'follow[\s-]?up:\s*tomorrow|fu:\s*tomorrow|followup\s+tomorrow': 'Tomorrow',
+            r'follow[\s-]?up:\s*2-3\s*days|fu:\s*2-3\s*days|followup\s+2-3\s*days': '2-3 days',
+            r'follow[\s-]?up:\s*2-4\s*weeks|fu:\s*2-4\s*weeks|followup\s+2-4\s*weeks': '2-4 weeks',
+            r'follow[\s-]?up:\s*1\s*month|fu:\s*1\s*month|followup\s+1\s*month': '1 month',
+            r'follow[\s-]?up:\s*3\s*months|fu:\s*3\s*months|followup\s+3\s*months': '3 months',
+            r'follow[\s-]?up:\s*1\s*year|fu:\s*1\s*year|followup\s+1\s*year': '1 year',
+            r'follow[\s-]?up:\s*prn|fu:\s*prn|followup\s+prn': 'PRN',
+            r'follow[\s-]?up:\s*next\s*well\s*check|fu:\s*next\s*well\s*check|followup\s+next\s*well\s*check': 'Next well check'
+        }
+        for pattern, fu in follow_up_patterns.items():
+            if re.search(pattern, text_lower):
+                self.follow_up = fu
+                return True
+        return False
         
     def render_output(self):
         """Render the current note components to output with conditional phrases"""
@@ -382,6 +438,10 @@ class PedsChartingTool:
             self.output_text.insert(tk.END, "\n")
             for phrase in conditional_phrases:
                 self.output_text.insert(tk.END, phrase + "\n", 'italic')
+        
+        # Add follow-up if set
+        if self.follow_up:
+            self.output_text.insert(tk.END, f"\nFollow-up: {self.follow_up}\n")
         
     def _detect_conditions(self, template_key, conditions):
         """Detect conditions based on template key"""
@@ -487,6 +547,7 @@ class PedsChartingTool:
         self.input_text.delete("1.0", tk.END)
         self.output_text.delete("1.0", tk.END)
         self.note_components = []
+        self.follow_up = None
         self.status_label.config(text="All cleared")
         
     def open_template_editor(self):
