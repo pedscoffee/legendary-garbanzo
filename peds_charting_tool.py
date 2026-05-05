@@ -173,14 +173,10 @@ class PedsChartingTool:
                     "- Follow up in {timeframe} or sooner if worsening"
                 ]
             },
-            "illness": {
-                "title": "ILLNESS",
+            "return_precautions": {
+                "title": "RETURN PRECAUTIONS",
                 "content": [
-                    "- Patient presents with {symptoms}",
-                    "- Duration: {duration}",
-                    "- Treatment: {treatment}",
-                    "- Return precautions discussed including [[*worsening fever|worsening pain|shortness of breath|vomiting|diarrhea|dehydration|worsening rash|abnormal movements|itching|failure to improve|prolonged symptoms|new symptoms]]",
-                    "- Follow up in {timeframe} or sooner if concerns"
+                    "- Return precautions include [[*worsening fever|*worsening pain|*shortness of breath|worsening cough|chest pain|severe headache|neck stiffness|confusion|altered mental status|seizure|difficulty breathing|fast breathing|wheezing|cyanosis|dehydration|decreased urination|dry mouth|no tears|sunken eyes|lethargy|irritability|vomiting|persistent vomiting|blood in vomit|diarrhea|bloody diarrhea|severe abdominal pain|bloody stool|rash|worsening rash|spreading rash|petechiae|bruising|abnormal movements|stiffness|weakness|numbness|tingling|itching|hives|swelling|angioedema|failure to improve|prolonged symptoms|symptoms lasting >3 days|symptoms lasting >1 week|new symptoms|new rash|new pain|new swelling|not drinking|not eating|not responding to treatment|medication side effects|allergic reaction|anaphylaxis|behavioral changes|suicidal ideation|self-harm thoughts|hearing loss|vision changes]]"
                 ]
             }
         }
@@ -197,7 +193,7 @@ class PedsChartingTool:
             {"label": "Eczema", "template": "eczema"},
             {"label": "Obesity", "template": "obesity"},
             {"label": "Injury", "template": "injury"},
-            {"label": "Illness", "template": "illness"}
+            {"label": "Return Precautions", "template": "return_precautions"}
         ]
         
         self.patterns = [
@@ -232,9 +228,8 @@ class PedsChartingTool:
                 "defaults": {"injury_type": "soft tissue injury", "location": "extremity", "mechanism": "playground accident", "pain_med": "ibuprofen", "restrictions": "as tolerated", "timeframe": "1 week"}
             },
             {
-                "pattern": r"illness|sick|fever",
-                "template": "illness",
-                "defaults": {"symptoms": "fever, cough", "duration": "3 days", "treatment": "supportive care", "timeframe": "PRN"}
+                "pattern": r"return precautions|rp",
+                "template": "return_precautions"
             }
         ]
         
@@ -608,7 +603,7 @@ class PedsChartingTool:
             'anxiety': ['mental_health'],
             'depression': ['mental_health'],
             'injury': ['injury'],
-            'illness': ['illness']
+            'return_precautions': ['illness']
         }
         if template_key in condition_map:
             conditions.update(condition_map[template_key])
