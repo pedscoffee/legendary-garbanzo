@@ -165,6 +165,12 @@
         "- Activity restrictions: {restrictions}",
         "- Follow up in {timeframe} or sooner if worsening"
       ]
+    },
+    "return_precautions": {
+      "title": "RETURN PRECAUTIONS",
+      "content": [
+        "- Return precautions include [[*worsening fever|*worsening pain|*shortness of breath|worsening cough|chest pain|severe headache|neck stiffness|confusion|altered mental status|seizure|difficulty breathing|fast breathing|wheezing|cyanosis|dehydration|decreased urination|dry mouth|no tears|sunken eyes|lethargy|irritability|vomiting|persistent vomiting|blood in vomit|diarrhea|bloody diarrhea|severe abdominal pain|bloody stool|rash|worsening rash|spreading rash|petechiae|bruising|abnormal movements|stiffness|weakness|numbness|tingling|itching|hives|swelling|angioedema|failure to improve|prolonged symptoms|symptoms lasting >3 days|symptoms lasting >1 week|new symptoms|new rash|new pain|new swelling|not drinking|not eating|not responding to treatment|medication side effects|allergic reaction|anaphylaxis|behavioral changes|suicidal ideation|self-harm thoughts|hearing loss|vision changes]]"
+      ]
     }
   },
   "quick_buttons": [
@@ -183,7 +189,8 @@
     {"label": "Headache", "template": "headache"},
     {"label": "Anxiety", "template": "anxiety"},
     {"label": "Depression", "template": "depression"},
-    {"label": "Injury", "template": "injury"}
+    {"label": "Injury", "template": "injury"},
+    {"label": "Return Precautions", "template": "return_precautions"}
   ],
   "patterns": [
     {
@@ -206,7 +213,7 @@
       }
     },
     {
-      "pattern": "uri",
+      "pattern": "\\buri\\b",
       "template": "uri",
       "defaults": {
         "symptoms": "rhinorrhea, congestion, cough",
@@ -224,7 +231,7 @@
       }
     },
     {
-      "pattern": "wcc",
+      "pattern": "\\bwcc\\b",
       "template": "wcc",
       "defaults": {
         "height_percentile": "50th",
@@ -266,6 +273,11 @@
         "restrictions": "as tolerated",
         "timeframe": "1 week"
       }
+    },
+    {
+      "pattern": "\\b(return precautions|rp)\\b",
+      "template": "return_precautions"
     }
   ]
 }
+
