@@ -323,8 +323,6 @@ class PedsChartingTool:
         self.output_text.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
         # Configure italic tag
         self.output_text.tag_configure('italic', font=('Arial', 11, 'italic'))
-        # Configure hidden tag for unselected options
-        self.output_text.tag_configure('hidden', elide=True)
         # Bind down arrow to jump to next placeholder
         self.output_text.bind('<Down>', self.jump_to_next_placeholder)
         
@@ -413,24 +411,8 @@ class PedsChartingTool:
         
     def jump_to_next_placeholder(self, event=None):
         """Jump to and select the next placeholder (single {..} or multi-select [[..]])"""
+        # Get current cursor position
         current_pos = self.output_text.index(tk.INSERT)
-        
-        # 1. Check if we are already inside a multi-select placeholder
-        # Search backwards for the start [[
-        multi_start_inside = self.output_text.search("[[", current_pos, backwards=True, stopindex="1.0")
-        if multi_start_inside:
-            # Check if there is a closing ]] before the current position
-            multi_end_before = self.output_text.search("]]", multi_start_inside, stopindex=current_pos)
-            if not multi_end_before:
-                # We are inside! Find the end and trigger.
-                multi_end_inside = self.output_text.search("]]", multi_start_inside, stopindex=tk.END)
-                if multi_end_inside:
-                    full_end = f"{multi_end_inside} + 2 chars"
-                    content = self.output_text.get(multi_start_inside, full_end)
-                    self.show_multi_select_dialog(multi_start_inside, full_end, content)
-                    return "break"
-
-        # 2. Regular search for the next one
         search_start = self.output_text.index(f"{current_pos} + 1 chars")
         
         # Search for both types of placeholders
@@ -449,7 +431,9 @@ class PedsChartingTool:
         
         if single_start and multi_start:
             # Compare positions
-            if self.output_text.compare(single_start, "<", multi_start):
+            single_line, single_col = map(int, single_start.split('.'))
+            multi_line, multi_col = map(int, multi_start.split('.'))
+            if single_line < multi_line or (single_line == multi_line and single_col < multi_col):
                 start_idx = single_start
                 placeholder_type = 'single'
             else:
@@ -495,15 +479,8 @@ class PedsChartingTool:
         display_options = []
         for opt in options:
             if opt.startswith('*'):
-                # Strip * and trailing separators
-                clean_opt = opt[1:].strip()
-                if clean_opt.endswith(' and '):
-                    clean_opt = clean_opt[:-5].strip()
-                elif clean_opt.endswith(','):
-                    clean_opt = clean_opt[:-1].strip()
-                
-                selected_options.append(clean_opt)
-                display_options.append(clean_opt)
+                selected_options.append(opt[1:].strip())
+                display_options.append(opt[1:].strip())
             else:
                 display_options.append(opt)
         
@@ -513,89 +490,41 @@ class PedsChartingTool:
         dialog.transient(self.root)
         dialog.grab_set()
         
-        # Set dialog size
-        dialog.geometry("450x550")
-        
         # Center dialog
+        dialog.geometry("400x400")
         dialog.update_idletasks()
-        x = (dialog.winfo_screenwidth() // 2) - (450 // 2)
-        y = (dialog.winfo_screenheight() // 2) - (550 // 2)
-        dialog.geometry(f"450x550+{x}+{y}")
+        x = (dialog.winfo_screenwidth() // 2) - (400 // 2)
+        y = (dialog.winfo_screenheight() // 2) - (400 // 2)
+        dialog.geometry(f"400x400+{x}+{y}")
         
         ttk.Label(dialog, text="Select options:", font=('Arial', 11, 'bold')).pack(pady=10)
-        
-        # --- Scrollable Area Setup ---
-        container = ttk.Frame(dialog)
-        container.pack(fill=tk.BOTH, expand=True, padx=10)
-        
-        canvas = tk.Canvas(container, highlightthickness=0)
-        scrollbar = ttk.Scrollbar(container, orient="vertical", command=canvas.yview)
-        scroll_frame = ttk.Frame(canvas)
-        
-        scroll_frame.bind(
-            "<Configure>",
-            lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
-        )
-        
-        canvas.create_window((0, 0), window=scroll_frame, anchor="nw")
-        canvas.configure(yscrollcommand=scrollbar.set)
-        
-        canvas.pack(side="left", fill="both", expand=True)
-        scrollbar.pack(side="right", fill="y")
-        
-        # Mouse wheel support
-        def _on_mousewheel(event):
-            canvas.yview_scroll(int(-1*(event.delta/120)), "units")
-        canvas.bind_all("<MouseWheel>", _on_mousewheel)
         
         # Create checkboxes
         checkboxes = {}
         for opt in display_options:
             var = tk.BooleanVar(value=opt in selected_options)
             checkboxes[opt] = var
-            cb = ttk.Checkbutton(scroll_frame, text=opt, variable=var)
+            cb = ttk.Checkbutton(dialog, text=opt, variable=var)
             cb.pack(anchor=tk.W, padx=20, pady=2)
         
         def on_ok():
-            # Unbind mousewheel before closing
-            canvas.unbind_all("<MouseWheel>")
-            
-            # Reconstruct the placeholder with * for selected items and logical separators
-            selected_indices = [i for i, opt in enumerate(display_options) if checkboxes[opt].get()]
-            num_selected = len(selected_indices)
-            
-            new_options = []
-            for i, opt in enumerate(display_options):
-                if checkboxes[opt].get():
-                    current_rank = selected_indices.index(i)
-                    
-                    suffix = ""
-                    if num_selected > 1:
-                        if current_rank == num_selected - 2: # Second to last
-                            suffix = " and "
-                        elif current_rank < num_selected - 2: # Earlier
-                            suffix = ", "
-                    
-                    new_options.append(f"*{opt}{suffix}")
-                else:
-                    new_options.append(opt)
-            
-            replacement = "[[" + "|".join(new_options) + "]]"
+            # Get selected options
+            selected = [opt for opt, var in checkboxes.items() if var.get()]
+            if selected:
+                replacement = ", ".join(selected)
+            else:
+                replacement = "[none selected]"
             
             # Replace placeholder in text
             self.output_text.delete(start_idx, end_idx)
             self.output_text.insert(start_idx, replacement)
             dialog.destroy()
             
-            # Re-render to apply hiding logic
-            self._apply_output_tags()
-            
             # Move to next placeholder
             self.output_text.mark_set(tk.INSERT, start_idx)
             self.root.after(100, self.jump_to_next_placeholder)
         
         def on_cancel():
-            canvas.unbind_all("<MouseWheel>")
             dialog.destroy()
         
         btn_frame = ttk.Frame(dialog)
@@ -661,70 +590,6 @@ class PedsChartingTool:
         # Add follow-up if set (in italics)
         if self.follow_up:
             self.output_text.insert(tk.END, f"\nFollow-up: {self.follow_up}\n", 'italic')
-        
-        # Apply tags to hide unselected placeholders
-        self._apply_output_tags()
-        
-    def _apply_output_tags(self):
-        """Apply tags to the output text to hide unselected parts of placeholders"""
-        # Clear existing hidden tags
-        self.output_text.tag_remove('hidden', '1.0', tk.END)
-        
-        # Search for all [[...]] placeholders
-        idx = '1.0'
-        while True:
-            idx = self.output_text.search('[[', idx, stopindex=tk.END)
-            if not idx:
-                break
-            
-            end_idx = self.output_text.search(']]', idx, stopindex=tk.END)
-            if not end_idx:
-                break
-            
-            # Found a placeholder: [[A|*B|C]]
-            full_end = f"{end_idx} + 2 chars"
-            content = self.output_text.get(idx, full_end)
-            
-            # Hide the [[ and ]]
-            self.output_text.tag_add('hidden', idx, f"{idx} + 2 chars")
-            self.output_text.tag_add('hidden', end_idx, full_end)
-            
-            # Parse options
-            inner = content[2:-2]
-            options = inner.split('|')
-            
-            current_opt_start = f"{idx} + 2 chars"
-            first_selected = True
-            
-            for i, opt in enumerate(options):
-                opt_len = len(opt)
-                next_opt_start = f"{current_opt_start} + {opt_len} chars"
-                
-                if opt.strip().startswith('*'):
-                    # Selected: show it (but hide the *)
-                    self.output_text.tag_add('hidden', current_opt_start, f"{current_opt_start} + 1 chars")
-                    
-                    # If this is not the first selected, we might want to add a comma?
-                    # But the comma should be in the text. 
-                    # For simplicity, we just show the selected text.
-                    if not first_selected:
-                        # Insert a comma in the UI? No, better to have it in the text.
-                        pass
-                    first_selected = False
-                else:
-                    # Not selected: hide it
-                    self.output_text.tag_add('hidden', current_opt_start, next_opt_start)
-                
-                # Hide the | separator
-                if i < len(options) - 1:
-                    sep_start = next_opt_start
-                    sep_end = f"{sep_start} + 1 chars"
-                    self.output_text.tag_add('hidden', sep_start, sep_end)
-                    current_opt_start = sep_end
-                else:
-                    current_opt_start = next_opt_start
-            
-            idx = full_end
         
     def _detect_conditions(self, template_key, conditions):
         """Detect conditions based on template key"""
@@ -815,30 +680,8 @@ class PedsChartingTool:
         return phrases
         
     def copy_to_clipboard(self):
-        """Copy output to clipboard, skipping hidden text"""
-        # Get all text but filter out 'hidden' tags
-        full_text = ""
-        
-        # Iterate through segments of the text
-        idx = "1.0"
-        while self.output_text.compare(idx, "<", tk.END):
-            # Get next range of tags
-            next_range = self.output_text.tag_nextrange("hidden", idx)
-            if not next_range:
-                # No more hidden text
-                full_text += self.output_text.get(idx, tk.END)
-                break
-            
-            # Add text before hidden range
-            full_text += self.output_text.get(idx, next_range[0])
-            # Skip hidden range
-            idx = next_range[1]
-            
-        # Clean up double commas or trailing commas that might result from hiding
-        full_text = re.sub(r',\s*,', ',', full_text)
-        full_text = re.sub(r',\s*\]\]', ']]', full_text) # (shouldn't happen with [[ hidden)
-        
-        output = full_text.strip()
+        """Copy output to clipboard"""
+        output = self.output_text.get("1.0", tk.END).strip()
         if output:
             pyperclip.copy(output)
             self.status_label.config(text="✓ Copied to clipboard!")
