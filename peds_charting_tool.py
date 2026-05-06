@@ -228,7 +228,7 @@ class PedsChartingTool:
                 "defaults": {"injury_type": "soft tissue injury", "location": "extremity", "mechanism": "playground accident", "pain_med": "ibuprofen", "restrictions": "as tolerated", "timeframe": "1 week"}
             },
             {
-                "pattern": r"\b(return precautions|rp)\b",
+                "pattern": r"return precautions|rp",
                 "template": "return_precautions"
             }
         ]
@@ -375,32 +375,25 @@ class PedsChartingTool:
         # Check for follow-up shorthand first
         self._check_follow_up_shorthand(input_text)
         
-        remaining_text = input_text
-        found_any = False
+        input_text_lower = input_text.lower()
         
-        # Try to match patterns and extract them from text
+        # Try to match patterns
+        matched = False
         for pattern_config in self.patterns:
             pattern = pattern_config['pattern']
-            # Use a more robust check for patterns
-            if re.search(pattern, remaining_text, re.IGNORECASE):
+            if re.search(pattern, input_text, re.IGNORECASE):
                 template_key = pattern_config['template']
                 self.note_components.append(template_key)
-                # Remove the matched pattern from the remaining text to avoid duplicate adding
-                remaining_text = re.sub(pattern, "", remaining_text, flags=re.IGNORECASE).strip()
-                found_any = True
+                matched = True
                 
-        # If there's remaining text that isn't just a shorthand, add it as free text
-        if remaining_text:
-            # Clean up extra whitespace/punctuation left over
-            clean_text = re.sub(r"^\s*[:.,;-]\s*", "", remaining_text).strip()
-            if clean_text:
-                self.note_components.append({"type": "freetext", "content": clean_text})
-                found_any = True
-
-        if found_any:
+        if matched:
             self.render_output()
             self.status_label.config(text="Input processed")
-            self.input_text.delete("1.0", tk.END) # Clear input after successful processing
+        else:
+            # If no pattern matched, add as free text
+            self.note_components.append({"type": "freetext", "content": input_text_lower})
+            self.render_output()
+            self.status_label.config(text="Added as free text")
         
     def set_follow_up(self, follow_up):
         """Set the follow-up timeframe"""
@@ -621,8 +614,8 @@ class PedsChartingTool:
         # Well child / health maintenance
         if any(word in text_lower for word in ['well child', 'health maintenance', 'wcc', 'check up', 'physical']):
             conditions.add('well_child')
-        # Illness / Return Precautions
-        if any(word in text_lower for word in ['fever', 'cough', 'cold', 'sick', 'illness', 'infection', 'virus', 'pain', 'ache', 'symptom', 'return precautions', 'rp']):
+        # Illness
+        if any(word in text_lower for word in ['fever', 'cough', 'cold', 'sick', 'illness', 'infection', 'virus', 'pain', 'ache', 'symptom']):
             conditions.add('illness')
         # Injury
         if any(word in text_lower for word in ['injury', 'hurt', 'fall', 'accident', 'trauma', 'sprain', 'fracture', 'wound']):
