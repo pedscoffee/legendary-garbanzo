@@ -8,6 +8,7 @@ import tkinter as tk
 from tkinter import ttk, scrolledtext, messagebox
 import json
 import re
+import sys
 import pyperclip
 from pathlib import Path
 from typing import Dict, List, Tuple
@@ -254,6 +255,13 @@ class PedsChartingTool:
             "quick_buttons": self.quick_buttons,
             "patterns": self.patterns
         }
+        if hasattr(self, 'conditional_logic') and self.conditional_logic:
+            data['conditional_logic'] = self.conditional_logic
+        elif hasattr(self, 'condition_map') and hasattr(self, 'condition_phrases'):
+            data['conditional_logic'] = {
+                'condition_map': self.condition_map,
+                'phrases': self.condition_phrases
+            }
         with open(self.templates_file, 'w') as f:
             json.dump(data, f, indent=2)
             
@@ -283,6 +291,12 @@ class PedsChartingTool:
             )
             btn.grid(row=row, column=col, padx=3, pady=3, sticky=(tk.W, tk.E))
             button_frame.columnconfigure(col, weight=1)
+            
+            # Bind right-click for context menu
+            btn.bind("<Button-3>", lambda e, t=button_config['template']: self.show_context_menu(e, t))
+            if sys.platform == 'darwin':
+                btn.bind("<Control-Button-1>", lambda e, t=button_config['template']: self.show_context_menu(e, t))
+                btn.bind("<Button-2>", lambda e, t=button_config['template']: self.show_context_menu(e, t))
         
         # Follow-Up Buttons Section
         followup_frame = ttk.LabelFrame(main_frame, text="Follow-Up", padding="10")
@@ -365,6 +379,97 @@ class PedsChartingTool:
         self.status_label = ttk.Label(main_frame, text="Ready", relief=tk.SUNKEN, anchor=tk.W)
         self.status_label.grid(row=4, column=0, sticky=(tk.W, tk.E))
         
+
+    def show_context_menu(self, event, template_key):
+        """Show right-click context menu for quick buttons"""
+        context_menu = tk.Menu(self.root, tearoff=0)
+        context_menu.add_command(label="Edit Template", command=lambda: self.open_template_editor_dialog(template_key))
+        context_menu.tk_popup(event.x_root, event.y_root)
+
+    def open_template_editor_dialog(self, template_key):
+        """Open a dialog to edit the template and its triggers"""
+        dialog = tk.Toplevel(self.root)
+        dialog.title(f"Edit Template: {template_key}")
+        dialog.geometry("600x700")
+        dialog.transient(self.root)
+        dialog.grab_set()
+
+        template = self.templates.get(template_key, {})
+        title = template.get("title", "")
+        content = "\n".join(template.get("content", []))
+
+        matching_patterns = []
+        for p in self.patterns:
+            if p['template'] == template_key:
+                matching_patterns.append(p['pattern'])
+        triggers = ", ".join(matching_patterns)
+
+        ttk.Label(dialog, text="Title:").pack(anchor=tk.W, padx=10, pady=(10, 0))
+        title_entry = ttk.Entry(dialog, width=50)
+        title_entry.pack(fill=tk.X, padx=10, pady=5)
+        title_entry.insert(0, title)
+
+        ttk.Label(dialog, text="Content (one line per bullet point, use {placeholder} for variables):").pack(anchor=tk.W, padx=10, pady=(10, 0))
+        content_text = scrolledtext.ScrolledText(dialog, height=15, width=50, font=('Arial', 11))
+        content_text.pack(fill=tk.BOTH, expand=True, padx=10, pady=5)
+        content_text.insert("1.0", content)
+
+        ttk.Label(dialog, text="Triggers (Regex patterns, comma separated):").pack(anchor=tk.W, padx=10, pady=(10, 0))
+        triggers_entry = ttk.Entry(dialog, width=50)
+        triggers_entry.pack(fill=tk.X, padx=10, pady=5)
+        triggers_entry.insert(0, triggers)
+
+        ttk.Label(dialog, text="Defaults (JSON format):").pack(anchor=tk.W, padx=10, pady=(10, 0))
+        defaults_text = scrolledtext.ScrolledText(dialog, height=5, width=50, font=('Arial', 11))
+        defaults_text.pack(fill=tk.X, padx=10, pady=5)
+        
+        first_defaults = {}
+        for p in self.patterns:
+            if p['template'] == template_key:
+                first_defaults = p.get('defaults', {})
+                break
+        
+        defaults_text.insert("1.0", json.dumps(first_defaults, indent=2))
+
+        def save_changes():
+            new_title = title_entry.get().strip()
+            
+            # Preserve empty lines but remove trailing empty strings
+            new_content_raw = content_text.get("1.0", tk.END).split("\n")
+            while new_content_raw and not new_content_raw[-1]:
+                new_content_raw.pop()
+
+            new_triggers_raw = triggers_entry.get().split(',')
+            new_triggers = [t.strip() for t in new_triggers_raw if t.strip()]
+
+            try:
+                new_defaults = json.loads(defaults_text.get("1.0", tk.END))
+            except json.JSONDecodeError:
+                messagebox.showerror("Error", "Invalid JSON in Defaults field.", parent=dialog)
+                return
+
+            if template_key not in self.templates:
+                self.templates[template_key] = {}
+            self.templates[template_key]['title'] = new_title
+            self.templates[template_key]['content'] = new_content_raw
+
+            self.patterns = [p for p in self.patterns if p['template'] != template_key]
+            
+            for trigger in new_triggers:
+                self.patterns.append({
+                    "pattern": trigger,
+                    "template": template_key,
+                    "defaults": new_defaults
+                })
+
+            self.save_templates()
+            dialog.destroy()
+            self.status_label.config(text=f"Template '{template_key}' updated.")
+
+        btn_frame = ttk.Frame(dialog)
+        btn_frame.pack(fill=tk.X, padx=10, pady=10)
+        ttk.Button(btn_frame, text="Save", command=save_changes).pack(side=tk.RIGHT, padx=5)
+        ttk.Button(btn_frame, text="Cancel", command=dialog.destroy).pack(side=tk.RIGHT, padx=5)
 
     def check_macro(self, event):
         """Instantly expand macros prefixed with a dot"""
