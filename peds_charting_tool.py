@@ -196,8 +196,7 @@ class PedsChartingTool:
             {"label": "Constipation", "template": "constipation"},
             {"label": "Eczema", "template": "eczema"},
             {"label": "Obesity", "template": "obesity"},
-            {"label": "Injury", "template": "injury"},
-            {"label": "Illness", "template": "illness"}
+            {"label": "Injury", "template": "injury"}
         ]
         
         self.patterns = [
@@ -230,11 +229,6 @@ class PedsChartingTool:
                 "pattern": r"injury|hurt|fall|trauma|sprain",
                 "template": "injury",
                 "defaults": {"injury_type": "soft tissue injury", "location": "extremity", "mechanism": "playground accident", "pain_med": "ibuprofen", "restrictions": "as tolerated", "timeframe": "1 week"}
-            },
-            {
-                "pattern": r"illness|sick|fever",
-                "template": "illness",
-                "defaults": {"symptoms": "fever, cough", "duration": "3 days", "treatment": "supportive care", "timeframe": "PRN"}
             }
         ]
         
@@ -607,8 +601,7 @@ class PedsChartingTool:
             'headache': ['illness'],
             'anxiety': ['mental_health'],
             'depression': ['mental_health'],
-            'injury': ['injury'],
-            'illness': ['illness']
+            'injury': ['injury']
         }
         if template_key in condition_map:
             conditions.update(condition_map[template_key])
