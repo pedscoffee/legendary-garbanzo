@@ -327,8 +327,6 @@ class PedsChartingTool:
         self.output_text.tag_configure('hidden', elide=True)
         # Bind down arrow to jump to next placeholder
         self.output_text.bind('<Down>', self.jump_to_next_placeholder)
-        # Also bind double-click for easier access
-        self.output_text.bind('<Double-1>', self.jump_to_next_placeholder)
         
         # Output controls
         output_controls = ttk.Frame(output_frame)
@@ -417,28 +415,15 @@ class PedsChartingTool:
         """Jump to and select the next placeholder (single {..} or multi-select [[..]])"""
         current_pos = self.output_text.index(tk.INSERT)
         
-        # Helper to search with -elide flag (needed on some platforms to find hidden text)
-        def search_elide(pattern, start, backwards=False, stopindex=None):
-            args = [self.output_text._w, 'search', '-elide']
-            if backwards:
-                args.append('-backwards')
-            if stopindex:
-                args.extend(['-stopindex', stopindex])
-            args.extend([pattern, start])
-            try:
-                return self.output_text.tk.call(*args)
-            except tk.TclError:
-                return ""
-
-        # 1. Check if we are already inside or just after a multi-select placeholder
-        # Use search_elide to find [[ even if it's hidden
-        multi_start_inside = search_elide("[[", current_pos, backwards=True, stopindex="1.0")
+        # 1. Check if we are already inside a multi-select placeholder
+        # Search backwards for the start [[
+        multi_start_inside = self.output_text.search("[[", current_pos, backwards=True, stopindex="1.0")
         if multi_start_inside:
             # Check if there is a closing ]] before the current position
-            multi_end_before = search_elide("]]", multi_start_inside, stopindex=current_pos)
+            multi_end_before = self.output_text.search("]]", multi_start_inside, stopindex=current_pos)
             if not multi_end_before:
                 # We are inside! Find the end and trigger.
-                multi_end_inside = search_elide("]]", multi_start_inside, stopindex=tk.END)
+                multi_end_inside = self.output_text.search("]]", multi_start_inside, stopindex=tk.END)
                 if multi_end_inside:
                     full_end = f"{multi_end_inside} + 2 chars"
                     content = self.output_text.get(multi_start_inside, full_end)
@@ -448,15 +433,15 @@ class PedsChartingTool:
         # 2. Regular search for the next one
         search_start = self.output_text.index(f"{current_pos} + 1 chars")
         
-        # Search for both types of placeholders using elide-aware search
-        single_start = search_elide("{", search_start, stopindex=tk.END)
-        multi_start = search_elide("[[", search_start, stopindex=tk.END)
+        # Search for both types of placeholders
+        single_start = self.output_text.search("{", search_start, stopindex=tk.END, regexp=False)
+        multi_start = self.output_text.search("[[", search_start, stopindex=tk.END, regexp=False)
         
         # Also search from beginning if not found
         if not single_start:
-            single_start = search_elide("{", "1.0", stopindex=current_pos)
+            single_start = self.output_text.search("{", "1.0", stopindex=current_pos, regexp=False)
         if not multi_start:
-            multi_start = search_elide("[[", "1.0", stopindex=current_pos)
+            multi_start = self.output_text.search("[[", "1.0", stopindex=current_pos, regexp=False)
         
         # Determine which placeholder comes first
         start_idx = None
@@ -480,7 +465,7 @@ class PedsChartingTool:
         if start_idx:
             if placeholder_type == 'single':
                 # Handle single placeholder
-                end_idx = search_elide("}", f"{start_idx} + 1 chars", stopindex=tk.END)
+                end_idx = self.output_text.search("}", f"{start_idx} + 1 chars", stopindex=tk.END, regexp=False)
                 if end_idx:
                     self.output_text.tag_remove(tk.SEL, "1.0", tk.END)
                     self.output_text.tag_add(tk.SEL, start_idx, f"{end_idx} + 1 chars")
@@ -489,7 +474,7 @@ class PedsChartingTool:
                     return "break"
             else:
                 # Handle multi-select placeholder
-                end_idx = search_elide("]]", f"{start_idx} + 2 chars", stopindex=tk.END)
+                end_idx = self.output_text.search("]]", f"{start_idx} + 2 chars", stopindex=tk.END, regexp=False)
                 if end_idx:
                     # Get the placeholder content
                     content = self.output_text.get(start_idx, f"{end_idx} + 2 chars")
