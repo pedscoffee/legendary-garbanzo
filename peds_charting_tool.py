@@ -53,6 +53,9 @@ class PedsChartingTool:
                 self.templates = data.get('templates', {})
                 self.quick_buttons = data.get('quick_buttons', [])
                 self.patterns = data.get('patterns', [])
+                self.conditional_logic = data.get('conditional_logic', {})
+                self.condition_map = self.conditional_logic.get('condition_map', {})
+                self.condition_phrases = self.conditional_logic.get('phrases', {})
         else:
             # Create default templates
             self.create_default_templates()
@@ -222,7 +225,26 @@ class PedsChartingTool:
             }
         ]
         
+
         # Save default templates
+        self.condition_map = {
+            'wcc': ['well_child'], 'asthma_stable': ['illness'], 'asthma_exacerbation': ['illness'],
+            'uri': ['illness'], 'adhd_stable': ['adhd', 'pcmh'], 'adhd_titration': ['adhd', 'pcmh'],
+            'otitis_media': ['ear_infection', 'illness'], 'pharyngitis': ['illness', 'strep_test'],
+            'obesity': ['obesity', 'weight', 'pcmh'], 'constipation': ['gi_symptoms'],
+            'gerd': ['gi_symptoms'], 'eczema': ['skin_condition'], 'headache': ['illness'],
+            'anxiety': ['mental_health'], 'depression': ['mental_health'], 'injury': ['injury']
+        }
+        self.condition_phrases = {
+            'well_child': "All forms, labs, immunizations, and patient concerns reviewed and addressed appropriately. Screening questions, past medical history, past social history, medications, and growth chart reviewed. Age-appropriate anticipatory guidance reviewed and printed in AVS. Parent questions addressed.",
+            'illness': "Recommended supportive care with OTC medications as needed. Return precautions given including increasing pain, worsening fever, dehydration, new symptoms, prolonged symptoms, worsening symptoms, and other concerns. Caregiver expressed understanding and agreement with treatment plan.",
+            'injury': "Recommended supportive care with Tylenol, Motrin, rest, ice, compression, elevation, and gradual return to activity as appropriate. Return precautions given including increasing pain, swelling, or failure to improve.",
+            'ear_infection': "Risk of untreated otitis media includes persistent pain and fever, hearing loss, and mastoiditis.",
+            'strep_test': "Risk of untreated strep throat includes rheumatic fever and peritonsillar abscess. This problem is moderate risk due to pending lab results which may necessitate further pharmacologic management.",
+            'dehydration_gi': "Patient is at risk for dehydration, which would warrant emergency room care or admission for IV fluids.",
+            'breathing': "Patient is at risk for worsening respiratory distress and clinical deterioration, which would need emergency room care or hospital admission.",
+            'pcmh': "PCMH Reminder"
+        }
         self.save_templates()
         
     def save_templates(self):
@@ -287,7 +309,21 @@ class PedsChartingTool:
             font=('Arial', 11)
         )
         self.input_text.grid(row=0, column=0, sticky=(tk.W, tk.E))
+
+        # Autocomplete Listbox
+        self.autocomplete_list = tk.Listbox(input_frame, height=4, font=('Arial', 10))
+        self.autocomplete_list.grid(row=2, column=0, sticky=(tk.W, tk.E), pady=(5, 0))
+        self.autocomplete_list.grid_remove()
+        self.autocomplete_list.bind('<<ListboxSelect>>', self.insert_autocomplete)
+        
         self.input_text.bind('<KeyRelease>', self.on_typing)
+        self.input_text.bind('<space>', self.check_macro)
+        self.input_text.bind('<Return>', self.check_macro)
+
+        for i in range(1, 9):
+            self.root.bind(f'<Command-{i}>', lambda e, idx=i-1: self.set_follow_up(self.follow_up_options[idx]) if idx < len(self.follow_up_options) else None)
+            self.root.bind(f'<Control-{i}>', lambda e, idx=i-1: self.set_follow_up(self.follow_up_options[idx]) if idx < len(self.follow_up_options) else None)
+
         
         # Control buttons for input
         input_controls = ttk.Frame(input_frame)
@@ -310,8 +346,10 @@ class PedsChartingTool:
             bg='#f0f0f0'
         )
         self.output_text.grid(row=0, column=0, sticky=(tk.W, tk.E, tk.N, tk.S))
-        # Configure italic tag
+        # Configure tags
         self.output_text.tag_configure('italic', font=('Arial', 11, 'italic'))
+        self.output_text.tag_configure('bold', font=('Arial', 11, 'bold'))
+        self.output_text.tag_configure('red', foreground='red')
         # Bind down arrow to jump to next placeholder
         self.output_text.bind('<Down>', self.jump_to_next_placeholder)
         
@@ -327,15 +365,64 @@ class PedsChartingTool:
         self.status_label = ttk.Label(main_frame, text="Ready", relief=tk.SUNKEN, anchor=tk.W)
         self.status_label.grid(row=4, column=0, sticky=(tk.W, tk.E))
         
+
+    def check_macro(self, event):
+        """Instantly expand macros prefixed with a dot"""
+        content = self.input_text.get("1.0", tk.END).strip()
+        words = content.split()
+        if not words: return
+        last_word = words[-1].lower()
+        
+        if last_word.startswith('.'):
+            macro_text = last_word[1:]  # strip dot
+            for pattern_config in self.patterns:
+                if re.search(pattern_config['pattern'], macro_text, re.IGNORECASE):
+                    new_content = content[:content.rindex(last_word)] + macro_text + " "
+                    self.input_text.delete("1.0", tk.END)
+                    self.input_text.insert("1.0", new_content)
+                    self.process_input()
+                    self.copy_to_clipboard()
+                    return "break"
+
+    def insert_autocomplete(self, event):
+        if not self.autocomplete_list.curselection(): return
+        selected = self.autocomplete_list.get(self.autocomplete_list.curselection())
+        content = self.input_text.get("1.0", tk.END).strip()
+        words = content.split()
+        if words:
+            new_content = " ".join(words[:-1] + [selected]) + " "
+            self.input_text.delete("1.0", tk.END)
+            self.input_text.insert("1.0", new_content)
+        self.autocomplete_list.grid_remove()
+        self.input_text.focus_set()
+
     def on_typing(self, event=None):
-        """Handle typing events - reset auto-copy timer"""
-        # Cancel existing timer
+        """Handle typing events - reset auto-copy timer and show autocomplete"""
+        if event and event.keysym in ('space', 'Return', 'BackSpace', 'Escape'):
+            self.autocomplete_list.grid_remove()
+        elif event and event.char and event.char.isalnum():
+            content = self.input_text.get("1.0", tk.END).strip()
+            words = content.split()
+            if words:
+                last_word = words[-1].lower()
+                suggestions = []
+                for p in self.patterns:
+                    display_pat = p['pattern'].replace('\\s+', ' ').replace('|', ' or ').replace('\\', '')
+                    if last_word in display_pat.lower() or last_word in p['template'].lower():
+                        suggestions.append(display_pat)
+                
+                if suggestions:
+                    self.autocomplete_list.delete(0, tk.END)
+                    for s in suggestions[:4]:
+                        self.autocomplete_list.insert(tk.END, s)
+                    self.autocomplete_list.grid()
+                else:
+                    self.autocomplete_list.grid_remove()
+
         if self.typing_timer:
             self.root.after_cancel(self.typing_timer)
-        
-        # Set new timer
         self.typing_timer = self.root.after(self.auto_copy_delay, self.auto_process_and_copy)
-        
+
     def auto_process_and_copy(self):
         """Process input and auto-copy after typing pause"""
         input_text = self.input_text.get("1.0", tk.END).strip()
@@ -349,41 +436,49 @@ class PedsChartingTool:
     def add_template(self, template_key):
         """Add a template to the note"""
         if template_key in self.templates:
-            self.note_components.append(template_key)
+            self.note_components.append({"type": "template", "key": template_key, "defaults": {}})
             self.render_output()
             self.copy_to_clipboard()
             self.status_label.config(text=f"Added: {template_key}")
-        
+
     def process_input(self):
         """Process shorthand input and expand to full text"""
         input_text = self.input_text.get("1.0", tk.END).strip()
-        
         if not input_text:
             return
-        
-        # Check for follow-up shorthand first
+            
+        self.autocomplete_list.grid_remove()
         self._check_follow_up_shorthand(input_text)
         
-        input_text_lower = input_text.lower()
-        
-        # Try to match patterns
+        overrides = {}
+        clean_words = []
+        for word in input_text.split():
+            if '=' in word and word.count('=') == 1:
+                k, v = word.split('=', 1)
+                v = v.replace('_', ' ')
+                overrides[k.lower()] = v
+            else:
+                clean_words.append(word)
+                
+        clean_input = " ".join(clean_words)
         matched = False
         for pattern_config in self.patterns:
-            pattern = pattern_config['pattern']
-            if re.search(pattern, input_text, re.IGNORECASE):
+            if re.search(pattern_config['pattern'], clean_input, re.IGNORECASE):
                 template_key = pattern_config['template']
-                self.note_components.append(template_key)
+                defaults = pattern_config.get('defaults', {})
+                merged_defaults = defaults.copy()
+                merged_defaults.update(overrides)
+                self.note_components.append({"type": "template", "key": template_key, "defaults": merged_defaults})
                 matched = True
                 
         if matched:
             self.render_output()
             self.status_label.config(text="Input processed")
         else:
-            # If no pattern matched, add as free text
-            self.note_components.append({"type": "freetext", "content": input_text_lower})
+            self.note_components.append({"type": "freetext", "content": clean_input})
             self.render_output()
             self.status_label.config(text="Added as free text")
-        
+
     def set_follow_up(self, follow_up):
         """Set the follow-up timeframe"""
         self.follow_up = follow_up
@@ -440,94 +535,111 @@ class PedsChartingTool:
                 return True
         return False
         
+
+    def highlight_placeholders(self):
+        """Find and color {placeholders} red"""
+        start_idx = "1.0"
+        while True:
+            start_idx = self.output_text.search("{", start_idx, stopindex=tk.END)
+            if not start_idx: break
+            end_idx = self.output_text.search("}", start_idx, stopindex=tk.END)
+            if not end_idx: break
+            end_idx = f"{end_idx}+1c"
+            self.output_text.tag_add("red", start_idx, end_idx)
+            start_idx = end_idx
+
     def render_output(self):
         """Render the current note components to output with conditional phrases"""
         self.output_text.delete("1.0", tk.END)
-        
         detected_conditions = set()
         
-        # Build content line by line with proper formatting
         for component in self.note_components:
             if isinstance(component, str) and component in self.templates:
-                # It's a template key
                 template = self.templates[component]
-                self.output_text.insert(tk.END, template['title'] + "\n")
+                self.output_text.insert(tk.END, template['title'] + "\n", 'bold')
                 for line in template['content']:
-                    self.output_text.insert(tk.END, line + "\n")
+                    tag = 'bold' if line.endswith(':') or 'Plan:' in line or 'Goal' in line else None
+                    if tag:
+                        self.output_text.insert(tk.END, line + "\n", tag)
+                    else:
+                        self.output_text.insert(tk.END, line + "\n")
                 self.output_text.insert(tk.END, "\n")
-                # Detect conditions for phrases
                 self._detect_conditions(component, detected_conditions)
+            elif isinstance(component, dict) and component.get('type') == 'template':
+                template_key = component['key']
+                defaults = component.get('defaults', {})
+                if template_key in self.templates:
+                    template = self.templates[template_key]
+                    self.output_text.insert(tk.END, template['title'] + "\n", 'bold')
+                    for line in template['content']:
+                        formatted_line = line
+                        for k, v in defaults.items():
+                            formatted_line = formatted_line.replace(f"{{{k}}}", v)
+                        # Check inline defaults {key:default}
+                        while "{" in formatted_line and ":" in formatted_line[formatted_line.find("{"):formatted_line.find("}")]:
+                            start = formatted_line.find("{")
+                            end = formatted_line.find("}")
+                            if end > start:
+                                inner = formatted_line[start+1:end]
+                                if ":" in inner:
+                                    k, default_val = inner.split(":", 1)
+                                    val = defaults.get(k, default_val)
+                                    formatted_line = formatted_line[:start] + val + formatted_line[end+1:]
+                                else:
+                                    break
+                            else:
+                                break
+                        
+                        tag = 'bold' if formatted_line.endswith(':') or 'Plan:' in formatted_line or 'Goal:' in formatted_line else None
+                        if tag:
+                            self.output_text.insert(tk.END, formatted_line + "\n", tag)
+                        else:
+                            self.output_text.insert(tk.END, formatted_line + "\n")
+                    self.output_text.insert(tk.END, "\n")
+                    self._detect_conditions(template_key, detected_conditions)
             elif isinstance(component, dict) and component.get('type') == 'freetext':
-                # It's free text
                 content = component['content']
-                self.output_text.insert(tk.END, content.upper() + "\n\n")
-                # Check free text for conditions
+                self.output_text.insert(tk.END, content.upper() + "\n\n", 'bold')
                 self._detect_conditions_in_text(content, detected_conditions)
         
-        # Add conditional phrases in actual italics
         conditional_phrases = self._get_conditional_phrases(detected_conditions)
         if conditional_phrases:
             self.output_text.insert(tk.END, "\n")
             for phrase in conditional_phrases:
                 self.output_text.insert(tk.END, phrase + "\n", 'italic')
         
-        # Add follow-up if set (in italics)
         if self.follow_up:
             self.output_text.insert(tk.END, f"\nFollow-up: {self.follow_up}\n", 'italic')
-        
+            
+        self.highlight_placeholders()
+
+
     def _detect_conditions(self, template_key, conditions):
         """Detect conditions based on template key"""
-        condition_map = {
-            'wcc': ['well_child'],
-            'asthma_stable': ['illness'],
-            'asthma_exacerbation': ['illness'],
-            'uri': ['illness'],
-            'adhd_stable': ['adhd', 'pcmh'],
-            'adhd_titration': ['adhd', 'pcmh'],
-            'otitis_media': ['ear_infection', 'illness'],
-            'pharyngitis': ['illness', 'strep_test'],
-            'obesity': ['obesity', 'weight', 'pcmh'],
-            'constipation': ['gi_symptoms'],
-            'gerd': ['gi_symptoms'],
-            'eczema': ['skin_condition'],
-            'headache': ['illness'],
-            'anxiety': ['mental_health'],
-            'depression': ['mental_health'],
-            'injury': ['injury']
-        }
-        if template_key in condition_map:
-            conditions.update(condition_map[template_key])
+        if hasattr(self, 'condition_map') and template_key in self.condition_map:
+            conditions.update(self.condition_map[template_key])
             
     def _detect_conditions_in_text(self, text, conditions):
         """Detect conditions in free text"""
         text_lower = text.lower()
-        # Well child / health maintenance
         if any(word in text_lower for word in ['well child', 'health maintenance', 'wcc', 'check up', 'physical']):
             conditions.add('well_child')
-        # Illness
         if any(word in text_lower for word in ['fever', 'cough', 'cold', 'sick', 'illness', 'infection', 'virus', 'pain', 'ache', 'symptom']):
             conditions.add('illness')
-        # Injury
         if any(word in text_lower for word in ['injury', 'hurt', 'fall', 'accident', 'trauma', 'sprain', 'fracture', 'wound']):
             conditions.add('injury')
-        # Ear infection
         if any(word in text_lower for word in ['ear infection', 'ear pain', 'otitis', 'earache']):
             conditions.add('ear_infection')
-        # Strep test
         if any(word in text_lower for word in ['strep', 'throat culture', 'rapid strep']):
             conditions.add('strep_test')
             conditions.add('pcmh')
-        # Dehydration/GI
         if any(word in text_lower for word in ['dehydration', 'vomiting', 'diarrhea', 'decreased urination', 'not peeing', 'not drinking']):
             conditions.add('dehydration_gi')
-        # Breathing
         if any(word in text_lower for word in ['breathing', 'wheezing', 'short of breath', 'respiratory', 'coughing', 'tachypnea']):
             conditions.add('breathing')
-        # ADHD
         if 'adhd' in text_lower or 'attention' in text_lower:
             conditions.add('adhd')
             conditions.add('pcmh')
-        # Weight/Obesity
         if any(word in text_lower for word in ['weight', 'obese', 'obesity', 'overweight', 'bmi', 'diet']):
             conditions.add('weight')
             conditions.add('pcmh')
@@ -535,33 +647,12 @@ class PedsChartingTool:
     def _get_conditional_phrases(self, conditions):
         """Get phrases based on detected conditions"""
         phrases = []
-        
-        if 'well_child' in conditions:
-            phrases.append("All forms, labs, immunizations, and patient concerns reviewed and addressed appropriately. Screening questions, past medical history, past social history, medications, and growth chart reviewed. Age-appropriate anticipatory guidance reviewed and printed in AVS. Parent questions addressed.")
-            
-        if 'illness' in conditions:
-            phrases.append("Recommended supportive care with OTC medications as needed. Return precautions given including increasing pain, worsening fever, dehydration, new symptoms, prolonged symptoms, worsening symptoms, and other concerns. Caregiver expressed understanding and agreement with treatment plan.")
-            
-        if 'injury' in conditions:
-            phrases.append("Recommended supportive care with Tylenol, Motrin, rest, ice, compression, elevation, and gradual return to activity as appropriate. Return precautions given including increasing pain, swelling, or failure to improve.")
-            
-        if 'ear_infection' in conditions:
-            phrases.append("Risk of untreated otitis media includes persistent pain and fever, hearing loss, and mastoiditis.")
-            
-        if 'strep_test' in conditions:
-            phrases.append("Risk of untreated strep throat includes rheumatic fever and peritonsillar abscess. This problem is moderate risk due to pending lab results which may necessitate further pharmacologic management.")
-            
-        if 'dehydration_gi' in conditions:
-            phrases.append("Patient is at risk for dehydration, which would warrant emergency room care or admission for IV fluids.")
-            
-        if 'breathing' in conditions:
-            phrases.append("Patient is at risk for worsening respiratory distress and clinical deterioration, which would need emergency room care or hospital admission.")
-            
-        if 'pcmh' in conditions:
-            phrases.append("PCMH Reminder")
-            
+        if hasattr(self, 'condition_phrases'):
+            for cond in conditions:
+                if cond in self.condition_phrases:
+                    phrases.append(self.condition_phrases[cond])
         return phrases
-        
+
     def copy_to_clipboard(self):
         """Copy output to clipboard"""
         output = self.output_text.get("1.0", tk.END).strip()

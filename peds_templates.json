@@ -89,7 +89,9 @@
         "- {medication} {frequency} to affected areas",
         "- Daily moisturizer application",
         "- Trigger avoidance discussed",
-        "- Follow up in {timeframe} or PRN for flares"
+        "- Follow up in {timeframe} or PRN for flares",
+        "",
+        "Discussed supportive care including importance of frequent moisturization, appropriate use of topical steroids, wet wrap therapy, and return precautions."
       ]
     },
     "obesity": {
@@ -165,25 +167,180 @@
         "- Activity restrictions: {restrictions}",
         "- Follow up in {timeframe} or sooner if worsening"
       ]
+    },
+    "adhd_comprehensive": {
+      "title": "ADHD A&P",
+      "content": [
+        "- Patient has kept important appointments since last visit (referrals, diagnostic studies, etc): {appointments_kept:Yes}",
+        "- Progress on goals since last visit: {progress:good progress}",
+        "- Barrier: {barrier:No barriers}",
+        "- Readiness to Change Score: {readiness_score:10}",
+        "- Psychoeducational: Psychoeducational reassessment is not required at this time",
+        "- Medication compliance: {compliance:good progress}",
+        "- Referral made to Community Resource: {community_referral:No}",
+        "- Self-Management logs explained and given to patient: {logs_explained:No}",
+        "- Depression Screening: See chart",
+        "",
+        "Self Care Plan:",
+        "Diet is not a direct cause of attention deficit disorder, but food can and does affect your child's mental state, which in turn seems to affect behavior. Monitoring and modifying what, when, and how much your child eats can help decrease the symptoms of ADD/ADHD. Eating small meals more often will be helpful. Children with ADD/ADHD are notorious for not eating regularly. They might not eat for hours and then binge on whatever is around. Prevent unhealthy eating habits by scheduling regular nutritious meals or snacks for your child no more than three hours apart. Get rid of the junk foods in your home. Put fatty and sugary foods off-limits when eating out. Turn off television shows riddled with junk-food ads. Give your child a daily vitamin-and-mineral supplement.",
+        "",
+        "Children with ADHD often have energy to burn. Organized sports and other physical activities can help them get their energy out in healthy ways and focus their attention on specific movements and skills. The benefits of physical activity are endless: it improves concentration, decreases depression and anxiety, and promotes brain growth. Most importantly for children with attention deficits, however, is the fact that exercise leads to better sleep, which in turn can also reduce the symptoms of ADHD. Find a sport that your child will enjoy and that suits his or her strengths. For example, sports such as softball that involve a lot of down time are not the best fit for children with attention problems. Individual or team sports like basketball and football require constant motion are better options."
+      ]
+    },
+    "obesity_comprehensive": {
+      "title": "OBESITY ASSESSMENT",
+      "content": [
+        "- Problems associated with obesity: At risk for or currently experiencing comorbidities secondary to obesity",
+        "- Patient has kept important appointments since last visit (referrals, diagnostic studies, etc): {appointments_kept:Yes}",
+        "- Progress on goals since last visit: {progress:No}",
+        "- Referral made to Community Resource: {community_referral:No}",
+        "- Referred to Nutrition Education Class (BMI >95%): {nutrition_referral:No}",
+        "- Referred to Nutrition Diabetic Education Class: {diabetic_referral:No}",
+        "- Nutrition Class has been completed: {nutrition_completed:No}",
+        "- Referred to Endocrinology: {endo_referral:No}",
+        "- Depression screening completed: See chart",
+        "- Self-Management logs explained and given to patient: {logs_explained:No}",
+        "- Self-Management abilities: {management_abilities:Adequate}",
+        "",
+        "Self Care Plan:",
+        "To reduce the amount of saturated fat in your diet, you should avoid all fried foods and most nuts. You must learn to plan ahead in order to have healthy snacks available and to avoid fast-food meals. Child should exercise at least 60 minutes every day. Sedentary activity such as watching TV or playing video games restricted to less than 2 hrs each day. Exercise may include walking, swimming, running or multi-media programs that require physical activity. The important factor is that overall movement is increased at a level within his/her physical limits. Barriers are identified and options for resolution discussed.",
+        "",
+        "Patient Goals:",
+        "- Dietary Goal: Appropriate calorie intake, Reduction of saturated fat, Avoidance of dense foods (fast food or fruit juices), Increase of fiber-fruit and vegetables",
+        "  - Barrier: {diet_barrier:none}",
+        "- Exercise Goal: 60 minutes/day. Sedentary activity (TV, video games) restricted to < 2 hrs/day",
+        "  - Barrier: {exercise_barrier:none}",
+        "- Wt/BMI Goal: Attain/maintain goal weight/Ideal BMI (<85%)",
+        "  - Barrier: {weight_barrier:none}",
+        "",
+        "Follow up next well check for abnormal labs/weight management"
+      ]
+    },
+    "strep_comprehensive": {
+      "title": "STREP A&P",
+      "content": [
+        "- Patient has kept important appointments since last visit (referrals, diagnostic studies, etc): {appointments_kept:yes}",
+        "- Progress on goals since last visit: {progress:New diagnosis/patient no prior goals set}",
+        "- Strep Goal: Complete medication as prescribed",
+        "  - Barrier: {barrier:No barrier identified}",
+        "- Readiness to Change Score: {readiness_score:10}",
+        "- Referral made to Community Resource: {community_referral:Assessed and not required at this time.}",
+        "- Self-Management logs explained and given to patient: {logs_explained:None indicated at this time.}",
+        "- Self-Management abilities: {management_abilities:Has adequate self-management skills}",
+        "- Medication compliance: {compliance:good}",
+        "",
+        "Self Care Plan:",
+        "Antibiotics treat a bacterial infection. Your child should feel better within 2 to 3 days after antibiotics are started. Give your child his antibiotics until they are gone, unless your child's healthcare provider says to stop them. Your child may return to school 24 hours after he starts antibiotic medicine.",
+        "",
+        "Acetaminophen (Tylenol) decreases pain and fever. Ask how much to give your child and how often to give it. Follow directions. Acetaminophen can cause liver damage if not taken correctly.",
+        "",
+        "NSAIDs, such as ibuprofen, help decrease swelling, pain, and fever. This medicine is available with or without a doctor's order. NSAIDs can cause stomach bleeding or kidney problems in certain people. Always read the medicine label and follow directions. Do not give these medicines to children under 6 months of age without direction from your child's healthcare provider.",
+        "",
+        "Give your child plenty of liquids. Liquids will help soothe your child's throat. Ask your child's healthcare provider how much liquid to give your child each day. Give your child warm or frozen liquids. Warm liquids include hot chocolate, sweetened tea, or soups. Frozen liquids include ice pops. Do not give your child acidic drinks such as orange juice, grapefruit juice, or lemonade. Acidic drinks can make your child's throat pain worse.",
+        "",
+        "Change your child's toothbrush after he/she has taken antibiotic for 72 hours."
+      ]
+    },
+    "newborn_0_28": {
+      "title": "0-28 DAYS OLD A&P",
+      "content": [
+        "- Patient has kept important appointments since last visit (referrals, diagnostic studies, etc): {appointments_kept:yes}",
+        "- Progress on goals since last visit: {progress:New diagnosis/patient no prior goals set}",
+        "- 0-28 Day Old Infant Goal: Normal Newborn Care",
+        "  - Barrier: {barrier:none}",
+        "- Readiness to Change Score: {readiness_score:10}",
+        "- Referral made to Community Resource: {community_referral:Assessed and is not required at this time.}",
+        "- Self-Management logs explained and given to patient: {logs_explained:None indicated at this time.}",
+        "- Self-Management abilities: {management_abilities:Has adequate self-management skills}",
+        "",
+        "Self Care Plan:",
+        "Emergency room with rectal temp > 100.4.",
+        "Nothing to eat other than breastmilk or formula, and for bottle fed infants, make sure you mix powder formula with 1 scoop powder to 2 oz water. For the first two weeks, feed your baby at least every 3-4 hours during the day and night.",
+        "Always lay your baby on his or her back to sleep. This position can help reduce your baby's risk for sudden infant death syndrome (SIDS)."
+      ]
     }
   },
   "quick_buttons": [
-    {"label": "Asthma Stable", "template": "asthma_stable"},
-    {"label": "Asthma Flare", "template": "asthma_exacerbation"},
-    {"label": "URI", "template": "uri"},
-    {"label": "ADHD Stable", "template": "adhd_stable"},
-    {"label": "ADHD Adjust", "template": "adhd_titration"},
-    {"label": "WCC", "template": "wcc"},
-    {"label": "GERD", "template": "gerd"},
-    {"label": "Constipation", "template": "constipation"},
-    {"label": "Eczema", "template": "eczema"},
-    {"label": "Obesity", "template": "obesity"},
-    {"label": "Otitis Media", "template": "otitis_media"},
-    {"label": "Pharyngitis", "template": "pharyngitis"},
-    {"label": "Headache", "template": "headache"},
-    {"label": "Anxiety", "template": "anxiety"},
-    {"label": "Depression", "template": "depression"},
-    {"label": "Injury", "template": "injury"}
+    {
+      "label": "Asthma Stable",
+      "template": "asthma_stable"
+    },
+    {
+      "label": "Asthma Flare",
+      "template": "asthma_exacerbation"
+    },
+    {
+      "label": "URI",
+      "template": "uri"
+    },
+    {
+      "label": "ADHD Stable",
+      "template": "adhd_stable"
+    },
+    {
+      "label": "ADHD Adjust",
+      "template": "adhd_titration"
+    },
+    {
+      "label": "WCC",
+      "template": "wcc"
+    },
+    {
+      "label": "GERD",
+      "template": "gerd"
+    },
+    {
+      "label": "Constipation",
+      "template": "constipation"
+    },
+    {
+      "label": "Eczema",
+      "template": "eczema"
+    },
+    {
+      "label": "Obesity",
+      "template": "obesity"
+    },
+    {
+      "label": "Otitis Media",
+      "template": "otitis_media"
+    },
+    {
+      "label": "Pharyngitis",
+      "template": "pharyngitis"
+    },
+    {
+      "label": "Headache",
+      "template": "headache"
+    },
+    {
+      "label": "Anxiety",
+      "template": "anxiety"
+    },
+    {
+      "label": "Depression",
+      "template": "depression"
+    },
+    {
+      "label": "Injury",
+      "template": "injury"
+    },
+    {
+      "label": "ADHD A&P",
+      "template": "adhd_comprehensive"
+    },
+    {
+      "label": "Obesity A&P",
+      "template": "obesity_comprehensive"
+    },
+    {
+      "label": "Strep A&P",
+      "template": "strep_comprehensive"
+    },
+    {
+      "label": "Newborn A&P",
+      "template": "newborn_0_28"
+    }
   ],
   "patterns": [
     {
@@ -266,6 +423,110 @@
         "restrictions": "as tolerated",
         "timeframe": "1 week"
       }
+    },
+    {
+      "pattern": "adhd\\\\s+comp|adhd\\\\s+ap",
+      "template": "adhd_comprehensive",
+      "defaults": {}
+    },
+    {
+      "pattern": "obesity\\\\s+comp|obesity\\\\s+ap",
+      "template": "obesity_comprehensive",
+      "defaults": {}
+    },
+    {
+      "pattern": "strep\\\\s+comp|strep\\\\s+ap",
+      "template": "strep_comprehensive",
+      "defaults": {}
+    },
+    {
+      "pattern": "newborn|0-28",
+      "template": "newborn_0_28",
+      "defaults": {}
     }
-  ]
+  ],
+  "conditional_logic": {
+    "condition_map": {
+      "wcc": [
+        "well_child"
+      ],
+      "asthma_stable": [
+        "illness"
+      ],
+      "asthma_exacerbation": [
+        "illness"
+      ],
+      "uri": [
+        "illness"
+      ],
+      "adhd_stable": [
+        "adhd",
+        "pcmh"
+      ],
+      "adhd_titration": [
+        "adhd",
+        "pcmh"
+      ],
+      "adhd_comprehensive": [
+        "adhd",
+        "pcmh"
+      ],
+      "otitis_media": [
+        "ear_infection",
+        "illness"
+      ],
+      "pharyngitis": [
+        "illness",
+        "strep_test"
+      ],
+      "strep_comprehensive": [
+        "illness",
+        "strep_test"
+      ],
+      "obesity": [
+        "obesity",
+        "weight",
+        "pcmh"
+      ],
+      "obesity_comprehensive": [
+        "obesity",
+        "weight",
+        "pcmh"
+      ],
+      "constipation": [
+        "gi_symptoms"
+      ],
+      "gerd": [
+        "gi_symptoms"
+      ],
+      "eczema": [
+        "skin_condition"
+      ],
+      "headache": [
+        "illness"
+      ],
+      "anxiety": [
+        "mental_health"
+      ],
+      "depression": [
+        "mental_health"
+      ],
+      "injury": [
+        "injury"
+      ],
+      "newborn_0_28": [
+        "well_child"
+      ]
+    },
+    "phrases": {
+      "well_child": "All forms, labs, immunizations, and patient concerns reviewed and addressed appropriately. Screening questions, past medical history, past social history, medications, and growth chart reviewed. Age-appropriate anticipatory guidance reviewed and printed in AVS. Parent questions addressed.",
+      "illness": "Recommended supportive care with OTC medications as needed. Return precautions given including increasing pain, worsening fever, dehydration, new symptoms, prolonged symptoms, worsening symptoms, and other concerns. Caregiver expressed understanding and agreement with treatment plan.",
+      "injury": "Recommended supportive care with Tylenol, Motrin, rest, ice, compression, elevation, and gradual return to activity as appropriate. Return precautions given including increasing pain, swelling, or failure to improve.",
+      "ear_infection": "Risk of untreated otitis media includes persistent pain and fever, hearing loss, and mastoiditis.",
+      "strep_test": "Risk of untreated strep throat includes rheumatic fever and peritonsillar abscess. This problem is moderate risk due to pending lab results which may necessitate further pharmacologic management.",
+      "dehydration_gi": "Patient is at risk for dehydration, which would warrant emergency room care or admission for IV fluids.",
+      "breathing": "Patient is at risk for worsening respiratory distress and clinical deterioration, which would need emergency room care or hospital admission.",
+      "pcmh": "PCMH Reminder"
+    }
+  }
 }
