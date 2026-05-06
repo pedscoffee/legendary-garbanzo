@@ -56,9 +56,6 @@ class PedsChartingTool:
                 self.conditional_logic = data.get('conditional_logic', {})
                 self.condition_map = self.conditional_logic.get('condition_map', {})
                 self.condition_phrases = self.conditional_logic.get('phrases', {})
-                self.conditional_logic = data.get('conditional_logic', {})
-                self.condition_map = self.conditional_logic.get('condition_map', {})
-                self.condition_phrases = self.conditional_logic.get('phrases', {})
         else:
             # Create default templates
             self.create_default_templates()
@@ -319,19 +316,9 @@ class PedsChartingTool:
         self.autocomplete_list.grid_remove()
         self.autocomplete_list.bind('<<ListboxSelect>>', self.insert_autocomplete)
         
-
-        # Autocomplete Listbox
-        self.autocomplete_list = tk.Listbox(input_frame, height=4, font=('Arial', 10))
-        self.autocomplete_list.grid(row=2, column=0, sticky=(tk.W, tk.E), pady=(5, 0))
-        self.autocomplete_list.grid_remove()
-        self.autocomplete_list.bind('<<ListboxSelect>>', self.insert_autocomplete)
-        
         self.input_text.bind('<KeyRelease>', self.on_typing)
-
-        for i in range(1, 9):
-            self.root.bind(f'<Command-{i}>', lambda e, idx=i-1: self.set_follow_up(self.follow_up_options[idx]) if idx < len(self.follow_up_options) else None)
-            self.root.bind(f'<Control-{i}>', lambda e, idx=i-1: self.set_follow_up(self.follow_up_options[idx]) if idx < len(self.follow_up_options) else None)
-
+        self.input_text.bind('<space>', self.check_macro)
+        self.input_text.bind('<Return>', self.check_macro)
 
         for i in range(1, 9):
             self.root.bind(f'<Command-{i}>', lambda e, idx=i-1: self.set_follow_up(self.follow_up_options[idx]) if idx < len(self.follow_up_options) else None)
@@ -379,18 +366,23 @@ class PedsChartingTool:
         self.status_label.grid(row=4, column=0, sticky=(tk.W, tk.E))
         
 
-    def insert_autocomplete(self, event):
-        if not self.autocomplete_list.curselection(): return
-        selected = self.autocomplete_list.get(self.autocomplete_list.curselection())
+    def check_macro(self, event):
+        """Instantly expand macros prefixed with a dot"""
         content = self.input_text.get("1.0", tk.END).strip()
         words = content.split()
-        if words:
-            new_content = " ".join(words[:-1] + [selected]) + " "
-            self.input_text.delete("1.0", tk.END)
-            self.input_text.insert("1.0", new_content)
-        self.autocomplete_list.grid_remove()
-        self.input_text.focus_set()
-
+        if not words: return
+        last_word = words[-1].lower()
+        
+        if last_word.startswith('.'):
+            macro_text = last_word[1:]  # strip dot
+            for pattern_config in self.patterns:
+                if re.search(pattern_config['pattern'], macro_text, re.IGNORECASE):
+                    new_content = content[:content.rindex(last_word)] + macro_text + " "
+                    self.input_text.delete("1.0", tk.END)
+                    self.input_text.insert("1.0", new_content)
+                    self.process_input()
+                    self.copy_to_clipboard()
+                    return "break"
 
     def insert_autocomplete(self, event):
         if not self.autocomplete_list.curselection(): return
@@ -409,32 +401,23 @@ class PedsChartingTool:
         if event and event.keysym in ('space', 'Return', 'BackSpace', 'Escape'):
             self.autocomplete_list.grid_remove()
         elif event and event.char and event.char.isalnum():
-            text_content = self.input_text.get("1.0", "end-1c").strip()
-            words = text_content.split()
+            content = self.input_text.get("1.0", tk.END).strip()
+            words = content.split()
             if words:
                 last_word = words[-1].lower()
                 suggestions = []
                 for p in self.patterns:
-                    display_pat = p['pattern'].replace('\\s+', ' ').replace('|', ' or ').replace('\\\\', '')
+                    display_pat = p['pattern'].replace('\\s+', ' ').replace('|', ' or ').replace('\\', '')
                     if last_word in display_pat.lower() or last_word in p['template'].lower():
                         suggestions.append(display_pat)
                 
                 if suggestions:
-                    self.autocomplete_list.delete(0, "end")
+                    self.autocomplete_list.delete(0, tk.END)
                     for s in suggestions[:4]:
-                        self.autocomplete_list.insert("end", s)
+                        self.autocomplete_list.insert(tk.END, s)
                     self.autocomplete_list.grid()
                 else:
                     self.autocomplete_list.grid_remove()
-
-        # check for double space trigger
-        if event and event.keysym == 'space':
-            text_before_cursor = self.input_text.get("1.0", "insert")
-            if text_before_cursor.endswith("  "):
-                self.process_input()
-                self.copy_to_clipboard()
-                self.status_label.config(text="✓ Auto-copied to clipboard")
-                self.root.after(3000, lambda: self.status_label.config(text="Ready"))
 
         if self.typing_timer:
             self.root.after_cancel(self.typing_timer)
@@ -442,79 +425,59 @@ class PedsChartingTool:
 
     def auto_process_and_copy(self):
         """Process input and auto-copy after typing pause"""
-        input_text = self.input_text.get("1.0", "end-1c").strip()
+        input_text = self.input_text.get("1.0", tk.END).strip()
         if input_text:
             self.process_input()
             self.copy_to_clipboard()
             self.status_label.config(text="✓ Auto-copied to clipboard")
+            # Reset status after 3 seconds
             self.root.after(3000, lambda: self.status_label.config(text="Ready"))
-
+        
     def add_template(self, template_key):
         """Add a template to the note"""
         if template_key in self.templates:
-            current = self.input_text.get("1.0", "end-1c").strip()
-            if current:
-                self.input_text.insert("end", f"\n.{template_key} ")
-            else:
-                self.input_text.insert("end", f".{template_key} ")
-            self.process_input()
+            self.note_components.append({"type": "template", "key": template_key, "defaults": {}})
+            self.render_output()
             self.copy_to_clipboard()
             self.status_label.config(text=f"Added: {template_key}")
 
     def process_input(self):
         """Process shorthand input and expand to full text"""
-        input_text = self.input_text.get("1.0", "end-1c").strip()
-        self.autocomplete_list.grid_remove()
-        
-        self.note_components = []
-        
+        input_text = self.input_text.get("1.0", tk.END).strip()
         if not input_text:
-            self.render_output()
             return
             
+        self.autocomplete_list.grid_remove()
         self._check_follow_up_shorthand(input_text)
         
-        current_freetext = []
-        
-        for line in input_text.split('\\n'):
-            line_stripped = line.strip()
-            
-            words = line_stripped.split()
-            macro_found = False
-            
-            for i, word in enumerate(words):
-                if word.startswith('.'):
-                    macro_cand = word[1:]
-                    for p in self.patterns:
-                        # Find matching pattern or direct template key match
-                        if re.search(p['pattern'], macro_cand, re.IGNORECASE) or macro_cand.lower() == p['template'].lower():
-                            overrides = {}
-                            for w in words[i+1:]:
-                                if '=' in w and w.count('=') == 1:
-                                    k, v = w.split('=', 1)
-                                    overrides[k.lower()] = v.replace('_', ' ')
-                            
-                            if current_freetext:
-                                self.note_components.append({"type": "freetext", "content": "\\n".join(current_freetext)})
-                                current_freetext = []
-                                
-                            defaults = p.get('defaults', {}).copy()
-                            defaults.update(overrides)
-                            self.note_components.append({"type": "template", "key": p['template'], "defaults": defaults})
-                            macro_found = True
-                            break
-                    if macro_found:
-                        break
-            
-            if not macro_found:
-                current_freetext.append(line)
+        overrides = {}
+        clean_words = []
+        for word in input_text.split():
+            if '=' in word and word.count('=') == 1:
+                k, v = word.split('=', 1)
+                v = v.replace('_', ' ')
+                overrides[k.lower()] = v
+            else:
+                clean_words.append(word)
                 
-        if current_freetext:
-            freetext_content = "\\n".join(current_freetext).strip()
-            if freetext_content:
-                self.note_components.append({"type": "freetext", "content": freetext_content})
+        clean_input = " ".join(clean_words)
+        matched = False
+        for pattern_config in self.patterns:
+            if re.search(pattern_config['pattern'], clean_input, re.IGNORECASE):
+                template_key = pattern_config['template']
+                defaults = pattern_config.get('defaults', {})
+                merged_defaults = defaults.copy()
+                merged_defaults.update(overrides)
+                self.note_components.append({"type": "template", "key": template_key, "defaults": merged_defaults})
+                matched = True
                 
-        self.render_output()
+        if matched:
+            self.render_output()
+            self.status_label.config(text="Input processed")
+        else:
+            self.note_components.append({"type": "freetext", "content": clean_input})
+            self.render_output()
+            self.status_label.config(text="Added as free text")
 
     def set_follow_up(self, follow_up):
         """Set the follow-up timeframe"""
@@ -572,19 +535,6 @@ class PedsChartingTool:
                 return True
         return False
         
-
-    def highlight_placeholders(self):
-        """Find and color {placeholders} red"""
-        start_idx = "1.0"
-        while True:
-            start_idx = self.output_text.search("{", start_idx, stopindex=tk.END)
-            if not start_idx: break
-            end_idx = self.output_text.search("}", start_idx, stopindex=tk.END)
-            if not end_idx: break
-            end_idx = f"{end_idx}+1c"
-            self.output_text.tag_add("red", start_idx, end_idx)
-            start_idx = end_idx
-
 
     def highlight_placeholders(self):
         """Find and color {placeholders} red"""
